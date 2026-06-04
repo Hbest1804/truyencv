@@ -1,11 +1,8 @@
 import { useState } from 'react';
-import { ViewState } from './types';
-import { Header } from './components/Header';
-import { Footer } from './components/Footer';
-import { HomeView } from './components/HomeView';
-import { DiscoverView } from './components/DiscoverView';
-import { DetailView } from './components/DetailView';
-import { ReaderView } from './components/ReaderView';
+import { ViewState } from '@/types';
+import { Header, Footer } from '@/layouts';
+import { HomePage, DiscoverPage, DetailPage, ReaderPage } from '@/pages';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { AnimatePresence, motion } from 'motion/react';
 
 const viewVariants = {
@@ -24,34 +21,35 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col font-ui text-on-background bg-background relative selection:bg-primary/20 selection:text-primary">
-      <Header currentView={currentView} onNavigate={navigate} />
-      
-      <AnimatePresence mode="wait">
-        {currentView === 'home' && (
-          <motion.div key="home" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
-            <HomeView onNavigate={navigate} />
-          </motion.div>
-        )}
-        {currentView === 'discover' && (
-          <motion.div key="discover" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
-            <DiscoverView onNavigate={navigate} />
-          </motion.div>
-        )}
-        {currentView === 'detail' && (
-          <motion.div key="detail" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
-            <DetailView onNavigate={navigate} />
-          </motion.div>
-        )}
-        {currentView === 'reader' && (
-          <motion.div key="reader" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
-            <ReaderView onNavigate={navigate} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {currentView !== 'reader' && <Footer currentView={currentView} />}
-    </div>
+    <AuthProvider>
+      <div className="min-h-screen flex flex-col font-ui text-on-background bg-background relative selection:bg-primary/20 selection:text-primary">
+        <Header currentView={currentView} onNavigate={navigate} />
+        
+        <AnimatePresence mode="wait">
+          {currentView === 'home' && (
+            <motion.div key="home" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+              <HomePage onNavigate={navigate} />
+            </motion.div>
+          )}
+          {currentView === 'discover' && (
+            <motion.div key="discover" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+              <DiscoverPage onNavigate={navigate} />
+            </motion.div>
+          )}
+          {currentView === 'detail' && (
+            <motion.div key="detail" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+              <DetailPage onNavigate={navigate} />
+            </motion.div>
+          )}
+          {currentView === 'reader' && (
+            <motion.div key="reader" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+              <ReaderPage onNavigate={navigate} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {currentView !== 'reader' && <Footer currentView={currentView} />}
+      </div>
+    </AuthProvider>
   );
 }
-

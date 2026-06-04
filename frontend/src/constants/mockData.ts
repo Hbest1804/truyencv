@@ -1,4 +1,4 @@
-import { Book, Chapter, Comment } from './types';
+import { Book, Chapter, Comment } from '@/types';
 
 export const FEATURED_BOOK = {
   id: 'featured-1',

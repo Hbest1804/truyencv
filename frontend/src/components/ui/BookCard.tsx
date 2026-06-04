@@ -1,5 +1,5 @@
 import { BookOpen, Star } from 'lucide-react';
-import { Book } from '../types';
+import { Book } from '@/types';
 import { motion } from 'motion/react';
 
 interface BookCardProps {
@@ -9,12 +9,11 @@ interface BookCardProps {
 }
 
 export function BookCard({ book, onClick, showDetails = true }: BookCardProps) {
-  // Determine gradient border / shadow based on index or title
   const isSpecial = book.rating && book.rating >= 4.8;
   
   return (
     <>
-      <motion.button 
+      <motion.button
         onClick={onClick}
         whileHover={{ y: -6 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -23,10 +22,10 @@ export function BookCard({ book, onClick, showDetails = true }: BookCardProps) {
         <div className="relative aspect-[2/3] mb-3.5 overflow-hidden rounded-2xl bg-surface-container border border-white/5 shadow-md transition-all duration-500 group-hover:border-secondary/40 group-hover:shadow-[0_12px_30px_rgba(6,182,212,0.2)]">
           
           {/* Cover Image */}
-          <img 
-            src={book.coverUrl} 
-            alt={book.title} 
-            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105" 
+          <img
+            src={book.coverUrl}
+            alt={book.title}
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             loading="lazy"
           />
 
@@ -57,7 +56,7 @@ export function BookCard({ book, onClick, showDetails = true }: BookCardProps) {
           {/* Chapters Count Overlay (Bottom Right) */}
           <div className="absolute bottom-3 right-3 z-10">
             <span className="bg-black/60 backdrop-blur-md text-on-surface text-xs font-semibold px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5 shadow-sm">
-              <BookOpen className="w-3.5 h-3.5 text-secondary" /> 
+              <BookOpen className="w-3.5 h-3.5 text-secondary" />
               {book.chapterCount} ch
             </span>
           </div>
@@ -83,11 +82,11 @@ export function BookCard({ book, onClick, showDetails = true }: BookCardProps) {
             {book.genres && book.genres.length > 0 && (
               <div className="flex gap-1.5 mt-2 flex-wrap">
                 {book.genres.slice(0, 2).map((g, i) => (
-                  <span 
-                    key={i} 
+                  <span
+                    key={i}
                     className={`px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md ${
-                      i % 2 === 0 
-                        ? 'bg-secondary/5 border border-secondary/15 text-secondary' 
+                      i % 2 === 0
+                        ? 'bg-secondary/5 border border-secondary/15 text-secondary'
                         : 'bg-primary/5 border border-primary/15 text-primary'
                     }`}
                   >
@@ -102,5 +101,3 @@ export function BookCard({ book, onClick, showDetails = true }: BookCardProps) {
     </>
   );
 }
-
-

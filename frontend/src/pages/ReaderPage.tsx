@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, List, Settings as SettingsIcon, ChevronLeft, ChevronRight, X, Minus, Plus } from 'lucide-react';
-import { ViewState } from '../types';
+import { ViewState } from '@/types';
 import { motion, AnimatePresence } from 'motion/react';
 
-interface ReaderViewProps {
+interface ReaderPageProps {
   onNavigate: (view: ViewState) => void;
 }
 
@@ -11,23 +11,21 @@ type ReaderTheme = 'dark' | 'light' | 'sepia' | 'nordic' | 'forest';
 type ReaderFont = 'serif' | 'sans' | 'mono';
 type ReaderSpacing = 'tight' | 'normal' | 'relaxed';
 
-export function ReaderView({ onNavigate }: ReaderViewProps) {
+export function ReaderPage({ onNavigate }: ReaderPageProps) {
   const [controlsVisible, setControlsVisible] = useState(true);
   const [readingProgress, setReadingProgress] = useState(35);
   const [theme, setTheme] = useState<ReaderTheme>('dark');
   const [font, setFont] = useState<ReaderFont>('serif');
-  const [fontSize, setFontSize] = useState(19); // default size in px
+  const [fontSize, setFontSize] = useState(19);
   const [spacing, setSpacing] = useState<ReaderSpacing>('normal');
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // Handle scroll to hide/show controls and update progress
   useEffect(() => {
     let lastScrollY = window.scrollY;
     
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      // Auto hide controls on scroll down, show on scroll up slightly
       if (currentScrollY > 50 && currentScrollY > lastScrollY && controlsVisible && !settingsOpen) {
         setControlsVisible(false);
       } else if (currentScrollY < lastScrollY && !controlsVisible) {
@@ -35,11 +33,10 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
       }
       lastScrollY = currentScrollY;
 
-      // Calculate progress
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (scrollHeight > 0) {
-          const scrolled = (currentScrollY / scrollHeight) * 100;
-          setReadingProgress(scrolled);
+        const scrolled = (currentScrollY / scrollHeight) * 100;
+        setReadingProgress(scrolled);
       }
     };
 
@@ -47,7 +44,6 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [controlsVisible, settingsOpen]);
 
-  // Apply theme styling mappings
   const themeClasses: Record<ReaderTheme, string> = {
     dark: 'bg-[#030712] text-[#f8fafc]',
     light: 'bg-[#f8fafc] text-[#0f172a]',
@@ -69,7 +65,7 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
   };
 
   return (
-    <div 
+    <div
       className={`min-h-screen transition-colors duration-300 ${themeClasses[theme]} ${fontClasses[font]}`}
       onClick={() => {
         if (settingsOpen) {
@@ -82,7 +78,7 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
       {/* Top Reader Control Bar */}
       <AnimatePresence>
         {controlsVisible && (
-          <motion.header 
+          <motion.header
             initial={{ y: "-100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "-100%", opacity: 0 }}
@@ -91,7 +87,7 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-[1280px] mx-auto font-ui">
-              <button 
+              <button
                 onClick={() => onNavigate('detail')}
                 className="flex items-center gap-2 text-on-surface-variant hover:text-secondary transition-colors cursor-pointer group"
               >
@@ -112,7 +108,7 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
                 <button className="text-on-surface-variant hover:text-secondary transition-colors p-2 rounded-full hover:bg-white/5 cursor-pointer">
                   <List className="w-5 h-5 text-white" />
                 </button>
-                <button 
+                <button
                   onClick={() => setSettingsOpen(!settingsOpen)}
                   className={`text-on-surface-variant hover:text-secondary transition-colors p-2 rounded-full hover:bg-white/5 cursor-pointer ${settingsOpen ? 'text-secondary bg-white/5' : ''}`}
                 >
@@ -125,20 +121,20 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
       </AnimatePresence>
 
       {/* Reading Progress Indicator */}
-      <div 
+      <div
         className={`fixed top-16 left-0 w-full h-[3px] z-50 bg-white/10 transition-all duration-300 ${
           controlsVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <div 
-          className="h-full bg-secondary transition-all duration-150 ease-out shadow-[0_0_8px_rgba(6,182,212,0.6)]" 
+        <div
+          className="h-full bg-secondary transition-all duration-150 ease-out shadow-[0_0_8px_rgba(6,182,212,0.6)]"
           style={{ width: `${readingProgress}%` }}
         ></div>
       </div>
 
       {/* Main Reading Canvas */}
       <main className="w-full max-w-[720px] mx-auto px-6 md:px-0 pt-32 pb-48 relative z-10 select-text">
-        <article 
+        <article
           className="max-w-none text-current"
           style={{ fontSize: `${fontSize}px`, lineHeight: lineHeights[spacing] }}
         >
@@ -151,7 +147,7 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
               Thư viện rộng lớn vô cùng, một kỳ quan kiến trúc làm bằng gỗ gụ thẫm màu và hắc thạch bóng loáng. Những hạt bụi nhảy múa lười biếng trong các luồng ánh sáng nhạt nhòa lọt qua những ô cửa sổ cao hình vòm. Nói nơi đây yên tĩnh thì quả là chưa đủ; sự im lặng ở đây có một sức nặng vật chất, đè nén lên màng nhĩ như độ sâu của đại dương mênh mông.
             </p>
             <p>
-              Elias lướt nhẹ một ngón tay dọc theo gáy của một cuốn sách bọc da cổ kính, cảm nhận những chữ dập nổi đã bị bào mòn mịn màng qua hàng thế kỷ tôn kính. Đây không phải là nơi để duyệt qua một cách tình cờ. Mỗi tập sách được lưu giữ ở đây không chỉ chứa đựng các bản vẽ thiết kế cho các tòa nhà, mà còn cho cả chính thực tại. Những "Kiến Trúc Sư Tĩnh Lặng", như cách họ được gọi trong những lời thì thầm kín đáo giữa những người được khai sáng, không phác thảo các công trình xây dựng; họ phác thảo chính các định luật vật lý chi phối chúng.
+              Elias lướt nhẹ một ngón tay dọc theo gáy của một cuốn sách bọc da cổ kính, cảm nhận những chữ dập nổi đã bị bào mòn mịn màng qua hàng thế kỷ tôn kính. Đây không phải là nơi để duyệt qua một cách tình cờ. Mỗi tập sách được lưu giữ ở đây không chỉ chứa đựng các bản vẽ thiết kế cho các tòa nhà, mà còn cho cả chính thực tại.
             </p>
             <p>
               Anh dừng lại, bàn tay lơ lửng trên một cuốn sách đặc biệt không có gì nổi bật được bọc trong vải bạt màu xám phiến thạch. Tựa đề, được đóng dấu nhạt bằng bạc, ghi: <em className="text-secondary font-bold">Tính Toàn Vẹn Cấu Trúc Của Hư Vô</em>.
@@ -162,10 +158,10 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
             </blockquote>
             
             <p>
-              Khi anh mở cuốn sách ra, những trang giấy không sột soạt; chúng như thể đang thở dài nhẹ nhõm. Các sơ đồ bên trong liên tục chuyển động, những điều không thể về mặt hình học xoắn vặn mắt và làm căng thẳng tâm trí người đọc. Chúng mềm mại, thích ứng với ánh sáng xung quanh, tự cấu hình lại khi anh lật các trang giấy.
+              Khi anh mở cuốn sách ra, những trang giấy không sột soạt; chúng như thể đang thở dài nhẹ nhõm. Các sơ đồ bên trong liên tục chuyển động, những điều không thể về mặt hình học xoắn vặn mắt và làm căng thẳng tâm trí người đọc.
             </p>
             <p>
-              Đột nhiên, một tiếng chuông mềm mại vang vọng khắp các giá sách dài vô tận. Đó là một âm thanh không hề hòa hợp với bối cảnh đến mức Elias suýt nữa đánh rơi cuốn sách cổ. Đó không phải là tiếng chuông của một chiếc đồng hồ, cũng không phải tiếng chuông của một vị khách ghé thăm. Đó là âm thanh sắc bén, rõ ràng của thủy tinh bị rạn nứt dưới một áp lực khổng lồ.
+              Đột nhiên, một tiếng chuông mềm mại vang vọng khắp các giá sách dài vô tận. Đó là âm thanh sắc bén, rõ ràng của thủy tinh bị rạn nứt dưới một áp lực khổng lồ.
             </p>
             
             <div className="flex justify-center my-14 opacity-40">
@@ -175,7 +171,7 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
             </div>
             
             <p>
-              Anh cẩn thận đóng cuốn sách lại, đảm bảo chiếc khóa tinh xảo đã được bảo mật. Sự im lặng ùa trở lại, nhưng giờ đây nó đã thay đổi. Sức nặng của nó đã biến mất, được thay thế bằng một sự chờ đợi căng thẳng tột độ. Bản thân kiến trúc của thư viện này cũng như thể đang nín thở dõi theo.
+              Anh cẩn thận đóng cuốn sách lại, đảm bảo chiếc khóa tinh xảo đã được bảo mật. Sự im lặng ùa trở lại, nhưng giờ đây nó đã thay đổi. Sức nặng của nó đã biến mất, được thay thế bằng một sự chờ đợi căng thẳng tột độ.
             </p>
           </div>
         </article>
@@ -184,7 +180,7 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
       {/* Preferences Drawer Panel */}
       <AnimatePresence>
         {settingsOpen && (
-          <motion.div 
+          <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -197,7 +193,7 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
                 <span className="font-display font-extrabold text-white text-base flex items-center gap-2">
                   <SettingsIcon className="w-5 h-5 text-secondary" /> Thiết lập trình đọc
                 </span>
-                <button 
+                <button
                   onClick={() => setSettingsOpen(false)}
                   className="text-on-surface-variant hover:text-white p-1.5 rounded-full hover:bg-white/5 cursor-pointer"
                 >
@@ -253,18 +249,17 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
 
               {/* Font Size & Spacing Controls */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Font Size */}
                 <div className="space-y-2.5">
                   <h4 className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Cỡ chữ ({fontSize}px)</h4>
                   <div className="flex items-center gap-3 bg-surface-container/60 p-1.5 rounded-xl border border-white/5">
-                    <button 
+                    <button
                       onClick={() => setFontSize(Math.max(14, fontSize - 1))}
                       className="w-8 h-8 rounded-lg bg-surface-container-high hover:bg-surface-container-highest flex items-center justify-center text-white cursor-pointer active:scale-95"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
                     <div className="flex-grow text-center text-xs font-bold text-white">Chữ</div>
-                    <button 
+                    <button
                       onClick={() => setFontSize(Math.min(28, fontSize + 1))}
                       className="w-8 h-8 rounded-lg bg-surface-container-high hover:bg-surface-container-highest flex items-center justify-center text-white cursor-pointer active:scale-95"
                     >
@@ -273,7 +268,6 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
                   </div>
                 </div>
 
-                {/* Line Spacing */}
                 <div className="space-y-2.5">
                   <h4 className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Giãn dòng</h4>
                   <div className="flex bg-surface-container/60 p-1.5 rounded-xl border border-white/5">
@@ -303,7 +297,7 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
       {/* Bottom Navigation & Controls */}
       <AnimatePresence>
         {controlsVisible && (
-          <motion.footer 
+          <motion.footer
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
@@ -311,7 +305,7 @@ export function ReaderView({ onNavigate }: ReaderViewProps) {
             className="fixed bottom-0 w-full z-50 glass-panel border-t border-white/5 shadow-lg font-ui"
             onClick={e => e.stopPropagation()}
           >
-            <div className="max-w-[720px] mx-auto px-4 md:px-0 py-4" onClick={e=>e.stopPropagation()}>
+            <div className="max-w-[720px] mx-auto px-4 md:px-0 py-4" onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-3.5 text-xs text-on-surface-variant">
                 <div>
                   Tiến độ: <span className="font-bold text-white">{Math.round(readingProgress)}%</span>

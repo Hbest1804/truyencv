@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { FEATURED_BOOK, RANKINGS, RECENT_BOOKS } from '../data';
-import { ViewState } from '../types';
-import { BookCard } from './BookCard';
+import { FEATURED_BOOK, RANKINGS, RECENT_BOOKS } from '@/constants/mockData';
+import { ViewState } from '@/types';
+import { BookCard } from '@/components/ui/BookCard';
 import { motion } from 'motion/react';
 import { Sparkles, Flame, BookOpen, ChevronRight, Trophy } from 'lucide-react';
 
-interface HomeViewProps {
+interface HomePageProps {
   onNavigate: (view: ViewState) => void;
 }
 
@@ -26,10 +26,9 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
-export function HomeView({ onNavigate }: HomeViewProps) {
+export function HomePage({ onNavigate }: HomePageProps) {
   const [rankingTab, setRankingTab] = useState<RankingTab>('week');
 
-  // Simulated ranking data variation based on tab selection
   const currentRankings = rankingTab === 'week'
     ? RANKINGS
     : [
@@ -50,7 +49,6 @@ export function HomeView({ onNavigate }: HomeViewProps) {
         variants={itemVariants}
         className="mb-16 relative rounded-3xl overflow-hidden border border-white/5 bg-surface-container-low shadow-[0_15px_40px_rgba(0,0,0,0.4)] flex flex-col md:flex-row min-h-[460px] md:h-[500px]"
       >
-        {/* Background Visual (Ambient Blur for glow) */}
         <div className="absolute top-[-20%] right-[-10%] w-[350px] h-[350px] rounded-full bg-primary/20 blur-[100px] pointer-events-none" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] rounded-full bg-secondary/10 blur-[80px] pointer-events-none" />
 
@@ -86,7 +84,6 @@ export function HomeView({ onNavigate }: HomeViewProps) {
             alt="Featured Book Cover"
             className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-1000 hover:scale-103"
           />
-          {/* Subtle Ambient Vignettes */}
           <div className="absolute inset-0 bg-gradient-to-r from-surface-container-low via-surface-container-low/40 to-transparent md:block hidden"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-surface-container-low via-surface-container-low/40 to-transparent md:hidden block"></div>
         </div>
@@ -133,7 +130,6 @@ export function HomeView({ onNavigate }: HomeViewProps) {
               </h2>
             </div>
 
-            {/* Custom Interactive Tab Selectors */}
             <div className="flex bg-surface-container/60 p-1 rounded-xl mb-6 border border-white/5">
               <button
                 onClick={() => setRankingTab('week')}
@@ -211,4 +207,3 @@ export function HomeView({ onNavigate }: HomeViewProps) {
     </motion.div>
   );
 }
-

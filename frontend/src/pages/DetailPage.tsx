@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { BookOpen, Bookmark, User, Star, Eye, ArrowRight, Expand, Send, MessageSquare, ChevronDown, ListPlus } from 'lucide-react';
-import { CURRENT_STORY_DETAIL, CHAPTERS, COMMENTS } from '../data';
-import { ViewState } from '../types';
+import { CURRENT_STORY_DETAIL, CHAPTERS, COMMENTS } from '@/constants/mockData';
+import { ViewState } from '@/types';
 import { motion, AnimatePresence } from 'motion/react';
 
-interface DetailViewProps {
+interface DetailPageProps {
   onNavigate: (view: ViewState) => void;
 }
 
@@ -21,7 +21,7 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 25 } }
 };
 
-export function DetailView({ onNavigate }: DetailViewProps) {
+export function DetailPage({ onNavigate }: DetailPageProps) {
   const book = CURRENT_STORY_DETAIL;
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [commentsList, setCommentsList] = useState(COMMENTS);
@@ -44,7 +44,7 @@ export function DetailView({ onNavigate }: DetailViewProps) {
   const displayedChapters = chapterOrderAsc ? CHAPTERS : [...CHAPTERS].reverse();
 
   return (
-    <motion.div 
+    <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="show"
@@ -54,15 +54,15 @@ export function DetailView({ onNavigate }: DetailViewProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 mb-16">
         
         {/* Cover Art */}
-        <motion.div 
-          variants={itemVariants} 
+        <motion.div
+          variants={itemVariants}
           className="lg:col-span-4 flex justify-center lg:justify-start"
         >
           <div className="relative rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 border border-white/5 bg-surface-container-low max-w-[320px] lg:max-w-full aspect-[2/3] w-full group hover:shadow-[0_20px_50px_rgba(168,85,247,0.25)] hover:border-primary/20">
-            <img 
-              src={book.coverUrl} 
-              alt={book.title} 
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103" 
+            <img
+              src={book.coverUrl}
+              alt={book.title}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
             />
             <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-secondary/20 flex items-center gap-1.5 shadow-md">
               <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
@@ -100,8 +100,8 @@ export function DetailView({ onNavigate }: DetailViewProps) {
           {/* Genres Badges */}
           <div className="flex flex-wrap gap-2 mb-8">
             {book.genres.map((g, i) => (
-              <span 
-                key={g} 
+              <span
+                key={g}
                 className={`px-4 py-1.5 rounded-xl text-xs font-bold tracking-wider uppercase border ${
                   i === 0 ? 'bg-secondary/5 border-secondary/15 text-secondary' :
                   i === 1 ? 'bg-primary/5 border-primary/15 text-primary' :
@@ -115,18 +115,18 @@ export function DetailView({ onNavigate }: DetailViewProps) {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <button 
+            <button
               onClick={() => onNavigate('reader')}
               className="bg-secondary text-on-secondary shadow-[0_4px_20px_rgba(6,182,212,0.35)] hover:shadow-[0_4px_25px_rgba(6,182,212,0.5)] font-bold py-3.5 px-8 rounded-xl hover:bg-secondary/90 transition-all duration-300 transform active:scale-98 cursor-pointer flex items-center justify-center gap-2.5"
             >
               <BookOpen className="w-5 h-5" />
               Đọc từ đầu
             </button>
-            <button 
+            <button
               onClick={() => setIsBookmarked(!isBookmarked)}
               className={`font-bold py-3.5 px-8 rounded-xl border transition-all duration-300 transform active:scale-98 cursor-pointer flex items-center justify-center gap-2.5 ${
-                isBookmarked 
-                  ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(168,85,247,0.15)]' 
+                isBookmarked
+                  ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(168,85,247,0.15)]'
                   : 'bg-surface-container-high/40 border-white/5 hover:border-white/15 text-white hover:bg-surface-container-high/60'
               }`}
             >
@@ -135,7 +135,7 @@ export function DetailView({ onNavigate }: DetailViewProps) {
             </button>
           </div>
 
-          {/* Synopsis Container */}
+          {/* Synopsis */}
           <div className="bg-surface-container-low/40 p-6 md:p-8 rounded-2xl border border-white/5 backdrop-blur-md shadow-md">
             <h3 className="text-lg font-bold text-white mb-4 font-display flex items-center gap-2">
               <span className="w-2 h-4 bg-primary rounded-full" />
@@ -156,11 +156,11 @@ export function DetailView({ onNavigate }: DetailViewProps) {
         <motion.div variants={itemVariants} className="lg:col-span-7">
           <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-3">
             <div className="flex items-center gap-2">
-              <ListPlus className="w-5 h-5 text-secondary" /> 
+              <ListPlus className="w-5 h-5 text-secondary" />
               <h2 className="text-xl font-bold text-white font-display">Danh sách chương</h2>
             </div>
             
-            <button 
+            <button
               onClick={() => setChapterOrderAsc(!chapterOrderAsc)}
               className="px-3.5 py-1.5 rounded-lg border border-white/5 hover:border-white/10 text-on-surface-variant hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer bg-surface-container/30"
             >
@@ -171,7 +171,7 @@ export function DetailView({ onNavigate }: DetailViewProps) {
           
           <div className="flex flex-col gap-3">
             {displayedChapters.map(ch => (
-              <button 
+              <button
                 key={ch.id}
                 onClick={() => onNavigate('reader')}
                 className="group p-4 rounded-xl bg-surface-container-low/40 border border-white/5 hover:border-secondary/25 hover:bg-surface-container-high/40 transition-all duration-300 flex items-center justify-between cursor-pointer text-left"
@@ -208,14 +208,14 @@ export function DetailView({ onNavigate }: DetailViewProps) {
           
           {/* Post Comment Input */}
           <div className="mb-8 bg-surface-container-low/40 p-5 rounded-2xl border border-white/5 backdrop-blur-md">
-            <textarea 
+            <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               className="w-full bg-surface-container-high/40 border border-white/5 rounded-xl p-4 text-white focus:border-primary/50 outline-none transition-all resize-none min-h-[100px] text-sm placeholder:text-outline"
               placeholder="Bạn nghĩ gì về chương này? Viết bình luận của bạn..."
             ></textarea>
             <div className="flex justify-end mt-3">
-              <button 
+              <button
                 onClick={handlePostComment}
                 className="bg-primary hover:bg-primary/95 text-white text-xs font-bold tracking-wider uppercase py-2.5 px-6 rounded-lg transition-all shadow-[0_0_12px_rgba(168,85,247,0.3)] flex items-center gap-2 cursor-pointer active:scale-98"
               >
@@ -228,24 +228,24 @@ export function DetailView({ onNavigate }: DetailViewProps) {
           <div className="space-y-6 max-h-[460px] overflow-y-auto custom-scrollbar pr-2">
             <AnimatePresence initial={false}>
               {commentsList.map(cmt => (
-                 <motion.div 
-                   key={cmt.id} 
-                   initial={{ opacity: 0, y: -10 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   exit={{ opacity: 0, y: 10 }}
-                   className="flex gap-4 border-b border-white/5 pb-5 last:border-0 last:pb-0"
-                 >
-                   <div className="w-10 h-10 rounded-xl border border-white/10 flex-shrink-0 overflow-hidden shadow-md">
-                     <img src={cmt.avatarUrl} alt={cmt.author} className="w-full h-full object-cover" />
-                   </div>
-                   <div className="flex-grow min-w-0">
-                     <div className="flex items-baseline justify-between mb-1 gap-2">
-                       <span className="font-bold text-white text-sm truncate">{cmt.author}</span>
-                       <span className="text-[9px] font-bold text-on-surface-variant tracking-wider whitespace-nowrap">{cmt.timeAgo}</span>
-                     </div>
-                     <p className="text-on-surface-variant text-sm leading-relaxed break-words">{cmt.content}</p>
-                   </div>
-                 </motion.div>
+                <motion.div
+                  key={cmt.id}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex gap-4 border-b border-white/5 pb-5 last:border-0 last:pb-0"
+                >
+                  <div className="w-10 h-10 rounded-xl border border-white/10 flex-shrink-0 overflow-hidden shadow-md">
+                    <img src={cmt.avatarUrl} alt={cmt.author} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-grow min-w-0">
+                    <div className="flex items-baseline justify-between mb-1 gap-2">
+                      <span className="font-bold text-white text-sm truncate">{cmt.author}</span>
+                      <span className="text-[9px] font-bold text-on-surface-variant tracking-wider whitespace-nowrap">{cmt.timeAgo}</span>
+                    </div>
+                    <p className="text-on-surface-variant text-sm leading-relaxed break-words">{cmt.content}</p>
+                  </div>
+                </motion.div>
               ))}
             </AnimatePresence>
           </div>
