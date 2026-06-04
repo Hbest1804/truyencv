@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../config/database.js';
 
 /**
@@ -54,18 +55,25 @@ export const loginUser = async (email, password) => {
  * @param {string} accessToken
  */
 export const logoutUser = async (accessToken) => {
-  // Set session cho supabase client với token của user
-  const { error: sessionError } = await supabase.auth.setSession({
+  // Tạo client tạm thời, KHÔNG dùng global singleton để tránh session leak
+  // giữa các request đồng thời trong môi trường multi-user server
+  const tempClient = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
+
+  await tempClient.auth.setSession({
     access_token: accessToken,
-    refresh_token: '', // refresh_token không bắt buộc khi logout
+    refresh_token: '',
   });
 
-  if (sessionError) {
-    // Bỏ qua lỗi invalid session vì mục tiêu là logout
-    console.warn('Set session warning during logout:', sessionError.message);
-  }
-
-  const { error } = await supabase.auth.signOut();
+  const { error } = await tempClient.auth.signOut();
 
   if (error) {
     const err = new Error(error.message);

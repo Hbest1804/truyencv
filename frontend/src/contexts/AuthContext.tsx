@@ -152,9 +152,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [state.refreshToken]);
 
-  // Auto-refresh token khi app load (nếu có stored token)
+  // Auto-refresh token khi app load — luôn verify token với server
+  // Không dùng state.isAuthenticated vì nó chỉ dựa vào localStorage,
+  // không kiểm tra token có còn hợp lệ hay không
   useEffect(() => {
-    if (state.refreshToken && !state.isAuthenticated) {
+    const storedRefreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    if (storedRefreshToken) {
       refreshAccessToken();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
