@@ -1,4 +1,4 @@
-import { ViewState } from '../types';
+import { ViewState } from '@/types';
 import { Github, Twitter, Globe, Send } from 'lucide-react';
 
 export function Footer({ currentView }: { currentView: ViewState }) {
@@ -30,8 +30,8 @@ export function Footer({ currentView }: { currentView: ViewState }) {
               ].map((social, idx) => {
                 const Icon = social.icon;
                 return (
-                  <a 
-                    key={idx} 
+                  <a
+                    key={idx}
                     href={social.href}
                     className="w-9 h-9 rounded-lg border border-white/5 hover:border-secondary/30 bg-surface-container-high/40 hover:bg-surface-container-highest text-on-surface-variant hover:text-secondary flex items-center justify-center transition-all duration-300 shadow-sm"
                   >
@@ -46,9 +46,9 @@ export function Footer({ currentView }: { currentView: ViewState }) {
           <div className="lg:col-span-2 flex flex-col gap-3.5 max-sm:mt-4">
             <h4 className="text-xs font-bold tracking-wider uppercase text-white font-display mb-1.5">Giới thiệu</h4>
             {['Về chúng tôi', 'Điều khoản', 'Bảo mật', 'Liên hệ'].map((link) => (
-              <a 
-                key={link} 
-                href="#" 
+              <a
+                key={link}
+                href="#"
                 className="text-sm text-on-surface-variant hover:text-secondary transition-colors duration-250 w-fit"
               >
                 {link}
@@ -60,9 +60,9 @@ export function Footer({ currentView }: { currentView: ViewState }) {
           <div className="lg:col-span-2 flex flex-col gap-3.5">
             <h4 className="text-xs font-bold tracking-wider uppercase text-white font-display mb-1.5">Tài nguyên</h4>
             {['Ứng dụng', 'API thư viện', 'Trợ giúp', 'Diễn đàn'].map((link) => (
-              <a 
-                key={link} 
-                href="#" 
+              <a
+                key={link}
+                href="#"
                 className="text-sm text-on-surface-variant hover:text-secondary transition-colors duration-250 w-fit"
               >
                 {link}
@@ -77,9 +77,9 @@ export function Footer({ currentView }: { currentView: ViewState }) {
               Nhận thông báo về các chương truyện mới nhất và sự kiện cộng đồng.
             </p>
             <div className="flex items-center gap-2 mt-1 relative">
-              <input 
-                type="email" 
-                placeholder="Email của bạn..." 
+              <input
+                type="email"
+                placeholder="Email của bạn..."
                 className="w-full bg-surface-container border border-white/5 hover:border-white/10 focus:border-secondary/40 rounded-lg py-2 px-4 pr-12 text-sm text-white outline-none transition-all"
               />
               <button className="absolute right-1 w-8 h-8 rounded-md bg-secondary text-on-secondary flex items-center justify-center hover:bg-secondary/90 transition-colors shadow-[0_0_10px_rgba(6,182,212,0.3)]">
@@ -101,4 +101,3 @@ export function Footer({ currentView }: { currentView: ViewState }) {
     </footer>
   );
 }
-
