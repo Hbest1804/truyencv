@@ -257,9 +257,6 @@ CORS_ORIGIN=http://localhost:3000
 # URL của backend API
 VITE_API_URL=http://localhost:5000/api
 
-# Gemini AI API Key (từ Google AI Studio)
-GEMINI_API_KEY=your-gemini-api-key
-
 # URL của ứng dụng (khi deploy)
 APP_URL=http://localhost:3000
 ```
