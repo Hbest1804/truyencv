@@ -1,22 +1,66 @@
 import { supabase } from '../config/database.js';
 
+// ─── Supabase select string để lấy story kèm author và genres ─────────────────
+// Dùng Supabase relational query thay vì v_story_detail view
+const STORY_SELECT = `
+  id,
+  author_id,
+  title,
+  slug,
+  cover_url,
+  description,
+  synopsis,
+  status,
+  is_published,
+  chapter_count,
+  view_count,
+  bookmark_count,
+  rating_avg,
+  rating_count,
+  word_count,
+  featured,
+  created_at,
+  updated_at,
+  published_at,
+  author:profiles!author_id (
+    username,
+    display_name,
+    avatar_url
+  ),
+  story_genres (
+    genres (
+      id,
+      name,
+      slug
+    )
+  )
+`.trim();
+
+/**
+ * Chuẩn hóa data từ Supabase relational query về format giống v_story_detail
+ * để frontend không cần thay đổi
+ */
+function normalizeStory(raw) {
+  if (!raw) return null;
+  const { author, story_genres, ...rest } = raw;
+  return {
+    ...rest,
+    author_username: author?.username || null,
+    author_display_name: author?.display_name || null,
+    author_avatar_url: author?.avatar_url || null,
+    genres: (story_genres || []).map((sg) => sg.genres).filter(Boolean),
+  };
+}
+
 // ============================================================
 // GET /stories - Lấy danh sách truyện (phân trang)
 // ============================================================
 export const getStories = async ({ page = 1, limit = 20, genre, status, sort = 'updated_at' }) => {
   const offset = (page - 1) * limit;
 
-  let query = supabase
-    .from('v_story_detail')
-    .select('*', { count: 'exact' })
-    .eq('is_published', true);
-
-  if (status) {
-    query = query.eq('status', status);
-  }
-
+  // Lọc theo genre nếu có — cần lấy story_ids trước
+  let genreStoryIds = null;
   if (genre) {
-    // Lọc theo slug thể loại
     const { data: genreData, error: genreError } = await supabase
       .from('genres')
       .select('id')
@@ -29,7 +73,6 @@ export const getStories = async ({ page = 1, limit = 20, genre, status, sort = '
       throw err;
     }
 
-    // Lấy story_ids thuộc thể loại này
     const { data: storyGenres, error: sgError } = await supabase
       .from('story_genres')
       .select('story_id')
@@ -37,19 +80,29 @@ export const getStories = async ({ page = 1, limit = 20, genre, status, sort = '
 
     if (sgError) throw sgError;
 
-    const storyIds = storyGenres.map((sg) => sg.story_id);
-    if (storyIds.length === 0) {
-      return { stories: [], total: 0, page, limit, totalPages: 0 };
+    genreStoryIds = (storyGenres || []).map((sg) => sg.story_id);
+    if (genreStoryIds.length === 0) {
+      return { stories: [], total: 0, page: Number(page), limit: Number(limit), totalPages: 0 };
     }
-    query = query.in('id', storyIds);
   }
 
-  // Sắp xếp
   const validSorts = ['updated_at', 'created_at', 'view_count', 'rating_avg', 'bookmark_count'];
   const sortField = validSorts.includes(sort) ? sort : 'updated_at';
-  query = query.order(sortField, { ascending: false });
 
-  query = query.range(offset, offset + limit - 1);
+  let query = supabase
+    .from('stories')
+    .select(STORY_SELECT, { count: 'exact' })
+    .eq('is_published', true)
+    .order(sortField, { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (status) {
+    query = query.eq('status', status);
+  }
+
+  if (genreStoryIds) {
+    query = query.in('id', genreStoryIds);
+  }
 
   const { data, error, count } = await query;
 
@@ -60,11 +113,11 @@ export const getStories = async ({ page = 1, limit = 20, genre, status, sort = '
   }
 
   return {
-    stories: data,
-    total: count,
+    stories: (data || []).map(normalizeStory),
+    total: count || 0,
     page: Number(page),
     limit: Number(limit),
-    totalPages: Math.ceil(count / limit),
+    totalPages: Math.ceil((count || 0) / limit),
   };
 };
 
@@ -72,75 +125,22 @@ export const getStories = async ({ page = 1, limit = 20, genre, status, sort = '
 // GET /stories/trending - Truyện xu hướng / xem nhiều nhất
 // ============================================================
 export const getTrendingStories = async ({ period = 'week', limit = 10 }) => {
-  const validPeriods = { week: 7, month: 30, all: null };
-  const days = validPeriods[period] ?? 7;
-
-  let viewQuery = supabase
-    .from('story_views')
-    .select('story_id, count:story_id.count()')
-    .order('count', { ascending: false })
+  // Fallback trực tiếp: lấy theo view_count tổng từ bảng stories
+  // (story_views có thể chưa có RLS phù hợp hoặc chưa có data)
+  const { data, error } = await supabase
+    .from('stories')
+    .select(STORY_SELECT)
+    .eq('is_published', true)
+    .order('view_count', { ascending: false })
     .limit(limit);
 
-  if (days) {
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-    viewQuery = viewQuery.gte('viewed_at', since);
-  }
-
-  const { data: viewData, error: viewError } = await viewQuery;
-
-  if (viewError) {
-    // Fallback: lấy theo view_count tổng từ bảng stories
-    const { data, error } = await supabase
-      .from('v_story_detail')
-      .select('*')
-      .eq('is_published', true)
-      .order('view_count', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      const err = new Error(error.message);
-      err.statusCode = 500;
-      throw err;
-    }
-    return data;
-  }
-
-  if (!viewData || viewData.length === 0) {
-    // Fallback khi chưa có view data
-    const { data, error } = await supabase
-      .from('v_story_detail')
-      .select('*')
-      .eq('is_published', true)
-      .order('view_count', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      const err = new Error(error.message);
-      err.statusCode = 500;
-      throw err;
-    }
-    return data;
-  }
-
-  const storyIds = viewData.map((v) => v.story_id);
-
-  const { data: stories, error: storiesError } = await supabase
-    .from('v_story_detail')
-    .select('*')
-    .in('id', storyIds)
-    .eq('is_published', true);
-
-  if (storiesError) {
-    const err = new Error(storiesError.message);
+  if (error) {
+    const err = new Error(error.message);
     err.statusCode = 500;
     throw err;
   }
 
-  // Gắn views_in_period và sort theo thứ tự view
-  const viewMap = new Map(viewData.map((v) => [v.story_id, v.count]));
-  return stories
-    .map((s) => ({ ...s, views_in_period: viewMap.get(s.id) || 0 }))
-    .sort((a, b) => b.views_in_period - a.views_in_period);
+  return (data || []).map(normalizeStory);
 };
 
 // ============================================================
@@ -149,14 +149,41 @@ export const getTrendingStories = async ({ period = 'week', limit = 10 }) => {
 export const searchStories = async ({ q, genre, status, minRating, sort = 'updated_at', page = 1, limit = 20 }) => {
   const offset = (page - 1) * limit;
 
-  let query = supabase
-    .from('v_story_detail')
-    .select('*', { count: 'exact' })
-    .eq('is_published', true);
+  // Lọc theo genre nếu có
+  let genreStoryIds = null;
+  if (genre) {
+    const { data: genreData } = await supabase
+      .from('genres')
+      .select('id')
+      .eq('slug', genre)
+      .single();
 
+    if (genreData) {
+      const { data: storyGenres } = await supabase
+        .from('story_genres')
+        .select('story_id')
+        .eq('genre_id', genreData.id);
+
+      genreStoryIds = (storyGenres || []).map((sg) => sg.story_id);
+      if (genreStoryIds.length === 0) {
+        return { stories: [], total: 0, page: Number(page), limit: Number(limit), totalPages: 0 };
+      }
+    }
+  }
+
+  const validSorts = ['updated_at', 'created_at', 'view_count', 'rating_avg', 'bookmark_count'];
+  const sortField = validSorts.includes(sort) ? sort : 'updated_at';
+
+  let query = supabase
+    .from('stories')
+    .select(STORY_SELECT, { count: 'exact' })
+    .eq('is_published', true)
+    .order(sortField, { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  // Tìm kiếm theo title (ilike) — không join author tại đây vì phức tạp hơn
   if (q && q.trim()) {
-    // Tìm kiếm theo title hoặc author username
-    query = query.or(`title.ilike.%${q.trim()}%,author_username.ilike.%${q.trim()}%`);
+    query = query.ilike('title', `%${q.trim()}%`);
   }
 
   if (status) {
@@ -173,32 +200,9 @@ export const searchStories = async ({ q, genre, status, minRating, sort = 'updat
     }
   }
 
-  if (genre) {
-    const { data: genreData } = await supabase
-      .from('genres')
-      .select('id')
-      .eq('slug', genre)
-      .single();
-
-    if (genreData) {
-      const { data: storyGenres } = await supabase
-        .from('story_genres')
-        .select('story_id')
-        .eq('genre_id', genreData.id);
-
-      const storyIds = (storyGenres || []).map((sg) => sg.story_id);
-      if (storyIds.length === 0) {
-        return { stories: [], total: 0, page, limit, totalPages: 0 };
-      }
-      query = query.in('id', storyIds);
-    }
+  if (genreStoryIds) {
+    query = query.in('id', genreStoryIds);
   }
-
-  const validSorts = ['updated_at', 'created_at', 'view_count', 'rating_avg', 'bookmark_count'];
-  const sortField = validSorts.includes(sort) ? sort : 'updated_at';
-  query = query.order(sortField, { ascending: false });
-
-  query = query.range(offset, offset + limit - 1);
 
   const { data, error, count } = await query;
 
@@ -209,11 +213,11 @@ export const searchStories = async ({ q, genre, status, minRating, sort = 'updat
   }
 
   return {
-    stories: data,
-    total: count,
+    stories: (data || []).map(normalizeStory),
+    total: count || 0,
     page: Number(page),
     limit: Number(limit),
-    totalPages: Math.ceil(count / limit),
+    totalPages: Math.ceil((count || 0) / limit),
   };
 };
 
@@ -221,17 +225,19 @@ export const searchStories = async ({ q, genre, status, minRating, sort = 'updat
 // GET /stories/:storyId - Chi tiết một truyện
 // ============================================================
 export const getStoryById = async (storyId, userId = null) => {
-  const { data: story, error } = await supabase
-    .from('v_story_detail')
-    .select('*')
+  const { data: raw, error } = await supabase
+    .from('stories')
+    .select(STORY_SELECT)
     .eq('id', storyId)
     .single();
 
-  if (error || !story) {
+  if (error || !raw) {
     const err = new Error('Truyện không tồn tại hoặc chưa được xuất bản');
     err.statusCode = 404;
     throw err;
   }
+
+  const story = normalizeStory(raw);
 
   // Kiểm tra truyện đã xuất bản (hoặc user là tác giả)
   if (!story.is_published && story.author_id !== userId) {
@@ -262,7 +268,7 @@ export const getStoryById = async (storyId, userId = null) => {
     ]);
 
     isFollowing = !!bookmarkRes.data;
-    isFavorited = !!bookmarkRes.data; // bookmarks = theo dõi / yêu thích trong schema này
+    isFavorited = !!bookmarkRes.data;
     userRating = ratingRes.data;
   }
 
@@ -278,7 +284,6 @@ export const getStoryById = async (storyId, userId = null) => {
 // POST /stories/:storyId/follow - Theo dõi truyện
 // ============================================================
 export const followStory = async (storyId, userId) => {
-  // Kiểm tra truyện tồn tại
   const { data: story, error: storyError } = await supabase
     .from('stories')
     .select('id')
@@ -292,7 +297,6 @@ export const followStory = async (storyId, userId) => {
     throw err;
   }
 
-  // Kiểm tra đã theo dõi chưa
   const { data: existing } = await supabase
     .from('bookmarks')
     .select('id')
@@ -355,11 +359,8 @@ export const unfollowStory = async (storyId, userId) => {
 
 // ============================================================
 // POST /stories/:storyId/favorite - Thêm vào yêu thích
-// Ghi chú: Dùng chung bảng bookmarks (bookmark = follow + favorite)
-// Tạo thêm bảng favorites riêng nếu muốn phân biệt
 // ============================================================
 export const favoriteStory = async (storyId, userId) => {
-  // Kiểm tra truyện tồn tại
   const { data: story, error: storyError } = await supabase
     .from('stories')
     .select('id')
@@ -373,7 +374,6 @@ export const favoriteStory = async (storyId, userId) => {
     throw err;
   }
 
-  // Dùng bookmarks như favorites (hoặc nếu schema có bảng riêng thì đổi ở đây)
   const { data: existing } = await supabase
     .from('bookmarks')
     .select('id')
@@ -438,14 +438,12 @@ export const unfavoriteStory = async (storyId, userId) => {
 // POST /stories/:storyId/rate - Đánh giá truyện (1–5 sao)
 // ============================================================
 export const rateStory = async (storyId, userId, score, review = null) => {
-  // Validate score
   if (!score || score < 1 || score > 5 || !Number.isInteger(Number(score))) {
     const err = new Error('Điểm đánh giá phải là số nguyên từ 1 đến 5');
     err.statusCode = 400;
     throw err;
   }
 
-  // Kiểm tra truyện tồn tại
   const { data: story, error: storyError } = await supabase
     .from('stories')
     .select('id')
@@ -459,7 +457,6 @@ export const rateStory = async (storyId, userId, score, review = null) => {
     throw err;
   }
 
-  // Upsert rating (tạo mới hoặc cập nhật nếu đã đánh giá)
   const { data, error } = await supabase
     .from('ratings')
     .upsert(
@@ -486,9 +483,6 @@ export const rateStory = async (storyId, userId, score, review = null) => {
 
 // ============================================================
 // POST /stories/:storyId/report - Báo cáo vi phạm
-// Ghi chú: Schema hiện tại chưa có bảng reports.
-// Ta tạm lưu vào notifications hoặc dùng Supabase realtime edge.
-// Ở đây trả về response thành công và log để admin xử lý.
 // ============================================================
 export const reportStory = async (storyId, userId, reason, detail = '') => {
   const validReasons = ['spam', 'copyright', 'inappropriate', 'wrong_category', 'other'];
@@ -499,7 +493,6 @@ export const reportStory = async (storyId, userId, reason, detail = '') => {
     throw err;
   }
 
-  // Kiểm tra truyện tồn tại
   const { data: story, error: storyError } = await supabase
     .from('stories')
     .select('id, title')
@@ -512,26 +505,24 @@ export const reportStory = async (storyId, userId, reason, detail = '') => {
     throw err;
   }
 
-  // Lấy thông tin admin để gửi notification
+  // Gửi notification đến admin (nếu có)
   const { data: admins } = await supabase
     .from('profiles')
     .select('id')
     .eq('role', 'admin');
 
-  // Gửi notification đến tất cả admin
   if (admins && admins.length > 0) {
     const notifications = admins.map((admin) => ({
       user_id: admin.id,
       type: 'system',
       title: `Báo cáo vi phạm: ${story.title}`,
-      body: `Lý do: ${reason}. Chi tiết: ${detail || 'Không có'}. Story ID: ${storyId}. Báo cáo bởi user: ${userId}`,
+      body: `Lý do: ${reason}. Chi tiết: ${detail || 'Không có'}. Story ID: ${storyId}. Báo cáo bởi: ${userId}`,
       link_url: `/admin/reports/${storyId}`,
     }));
 
     await supabase.from('notifications').insert(notifications);
   }
 
-  // Log báo cáo (trong thực tế nên có bảng reports riêng)
   console.log(`[REPORT] Story: ${storyId} | User: ${userId} | Reason: ${reason} | Detail: ${detail}`);
 
   return {
@@ -547,7 +538,6 @@ export const reportStory = async (storyId, userId, reason, detail = '') => {
 // POST /stories/:storyId/share - Tạo link chia sẻ
 // ============================================================
 export const shareStory = async (storyId, userId = null, platform = 'general') => {
-  // Kiểm tra truyện tồn tại
   const { data: story, error: storyError } = await supabase
     .from('stories')
     .select('id, title, slug, cover_url, description')
@@ -564,16 +554,12 @@ export const shareStory = async (storyId, userId = null, platform = 'general') =
   const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const shareUrl = `${baseUrl}/stories/${story.slug}`;
 
-  // Tạo link chia sẻ theo platform
   const shareLinks = {
     general: shareUrl,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
     twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(story.title)}`,
     telegram: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(story.title)}`,
   };
-
-  // Tăng view_count (tính share như một lượt tương tác)
-  // Không tăng view_count cho share, chỉ ghi nhận
 
   return {
     story_id: storyId,
