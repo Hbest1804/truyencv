@@ -572,15 +572,28 @@ export const reportStory = async (storyId, userId, reason, detail = '') => {
     await supabase.from('notifications').insert(notifications);
   }
 
+  // Lưu báo cáo vào database
+  const { data: report, error: reportError } = await supabase
+    .from('reports')
+    .insert({
+      story_id: storyId,
+      reported_by: userId,
+      reason,
+      detail: detail || '',
+      status: 'pending',
+    })
+    .select()
+    .single();
+
+  if (reportError) {
+    const err = new Error(reportError.message);
+    err.statusCode = 500;
+    throw err;
+  }
+
   console.log(`[REPORT] Story: ${storyId} | User: ${userId} | Reason: ${reason} | Detail: ${detail}`);
 
-  return {
-    story_id: storyId,
-    reported_by: userId,
-    reason,
-    detail,
-    status: 'pending',
-  };
+  return report;
 };
 
 // ============================================================

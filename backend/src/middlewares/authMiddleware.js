@@ -15,9 +15,9 @@ export const authMiddleware = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
 
     // Xác thực token bằng Supabase Auth client
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data, error } = await supabase.auth.getUser(token);
 
-    if (error || !user) {
+    if (error || !data?.user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid or expired token',
@@ -26,7 +26,7 @@ export const authMiddleware = async (req, res, next) => {
     }
 
     // Đính kèm thông tin user vào request object để các controller phía sau sử dụng
-    req.user = user;
+    req.user = data.user;
     next();
   } catch (error) {
     next(error);
@@ -42,10 +42,10 @@ export const optionalAuthMiddleware = async (req, res, next) => {
       const token = authHeader.split(' ')[1];
 
       // Xác thực token bằng Supabase Auth client
-      const { data: { user }, error } = await supabase.auth.getUser(token);
+      const { data, error } = await supabase.auth.getUser(token);
 
-      if (!error && user) {
-        req.user = user;
+      if (!error && data?.user) {
+        req.user = data.user;
       }
     }
     next();
