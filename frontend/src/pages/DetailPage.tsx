@@ -312,14 +312,24 @@ export function DetailPage({ onNavigate, storyId }: DetailPageProps) {
 
   const handleToggleFollow = async () => {
     if (!isAuthenticated) { showToast('Vui lòng đăng nhập để theo dõi truyện', 'error'); return; }
-    await toggleFollow();
-    showToast(story?.is_following ? 'Đã hủy theo dõi' : 'Đã theo dõi truyện!');
+    try {
+      const wasFollowing = story?.is_following;
+      await toggleFollow();
+      showToast(wasFollowing ? 'Đã hủy theo dõi' : 'Đã theo dõi truyện!');
+    } catch {
+      // Lỗi đã được xử lý bởi useStory hook và hiện qua actionError toast
+    }
   };
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) { showToast('Vui lòng đăng nhập để thêm yêu thích', 'error'); return; }
-    await toggleFavorite();
-    showToast(story?.is_favorited ? 'Đã xóa khỏi yêu thích' : 'Đã thêm vào yêu thích!');
+    try {
+      const wasFavorited = story?.is_favorited;
+      await toggleFavorite();
+      showToast(wasFavorited ? 'Đã xóa khỏi yêu thích' : 'Đã thêm vào yêu thích!');
+    } catch {
+      // Lỗi đã được xử lý bởi useStory hook và hiện qua actionError toast
+    }
   };
 
   const handleRate = async () => {

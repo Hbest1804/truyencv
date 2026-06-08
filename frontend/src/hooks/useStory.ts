@@ -179,6 +179,7 @@ export function useStory(storyId: string | null) {
       }
     } catch (err: unknown) {
       setActionError((err as Error).message || 'Lỗi khi cập nhật theo dõi');
+      throw err;
     } finally {
       setActionLoading(false);
     }
@@ -198,7 +199,9 @@ export function useStory(storyId: string | null) {
         setStory(prev => prev ? { ...prev, is_favorited: true } : prev);
       }
     } catch (err: unknown) {
-      setActionError((err as Error).message || 'Lỗi khi cập nhật yêu thích');
+      const errMsg = (err as Error).message || 'Lỗi khi cập nhật yêu thích';
+      setActionError(errMsg);
+      throw err;
     } finally {
       setActionLoading(false);
     }
