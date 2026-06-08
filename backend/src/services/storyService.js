@@ -158,16 +158,18 @@ export const searchStories = async ({ q, genre, status, minRating, sort = 'updat
       .eq('slug', genre)
       .single();
 
-    if (genreData) {
-      const { data: storyGenres } = await supabase
-        .from('story_genres')
-        .select('story_id')
-        .eq('genre_id', genreData.id);
+    if (!genreData) {
+      return { stories: [], total: 0, page: Number(page), limit: Number(limit), totalPages: 0 };
+    }
 
-      genreStoryIds = (storyGenres || []).map((sg) => sg.story_id);
-      if (genreStoryIds.length === 0) {
-        return { stories: [], total: 0, page: Number(page), limit: Number(limit), totalPages: 0 };
-      }
+    const { data: storyGenres } = await supabase
+      .from('story_genres')
+      .select('story_id')
+      .eq('genre_id', genreData.id);
+
+    genreStoryIds = (storyGenres || []).map((sg) => sg.story_id);
+    if (genreStoryIds.length === 0) {
+      return { stories: [], total: 0, page: Number(page), limit: Number(limit), totalPages: 0 };
     }
   }
 
