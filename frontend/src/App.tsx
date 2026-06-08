@@ -13,10 +13,12 @@ const viewVariants = {
 
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewState>('home');
+  const [currentStoryId, setCurrentStoryId] = useState<string | undefined>(undefined);
 
   // Scroll to top on view change
-  const navigate = (view: ViewState) => {
+  const navigate = (view: ViewState, storyId?: string) => {
     setCurrentView(view);
+    setCurrentStoryId(storyId);
     window.scrollTo(0, 0);
   };
 
@@ -38,7 +40,7 @@ export default function App() {
           )}
           {currentView === 'detail' && (
             <motion.div key="detail" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
-              <DetailPage onNavigate={navigate} />
+              <DetailPage onNavigate={navigate} storyId={currentStoryId} />
             </motion.div>
           )}
           {currentView === 'reader' && (

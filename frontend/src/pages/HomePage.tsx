@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { FEATURED_BOOK, RANKINGS, RECENT_BOOKS } from '@/constants/mockData';
-import { ViewState } from '@/types';
+import { FEATURED_BOOK } from '@/constants/mockData';
+import { ViewState, Story } from '@/types';
 import { BookCard } from '@/components/ui/BookCard';
 import { motion } from 'motion/react';
-import { Sparkles, Flame, BookOpen, ChevronRight, Trophy } from 'lucide-react';
+import { Sparkles, Flame, BookOpen, ChevronRight, Trophy, Loader2, AlertCircle } from 'lucide-react';
+import { useStories, useTrendingStories } from '@/hooks/useStory';
 
 interface HomePageProps {
-  onNavigate: (view: ViewState) => void;
+  onNavigate: (view: ViewState, storyId?: string) => void;
 }
 
 type RankingTab = 'week' | 'month';
@@ -26,16 +27,60 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
 };
 
+// Chuyển Story từ API thành Book (cho BookCard)
+function storyToBookCard(story: Story) {
+  const statusMap: Record<string, 'Ongoing' | 'Completed'> = {
+    ongoing: 'Ongoing',
+    completed: 'Completed',
+    hiatus: 'Ongoing',
+    dropped: 'Completed',
+  };
+  return {
+    id: story.id,
+    title: story.title,
+    author: story.author_display_name || story.author_username || 'Không rõ',
+    coverUrl: story.cover_url || 'https://placehold.co/400x600/1a1a2e/c084fc?text=No+Cover',
+    genres: story.genres?.map(g => g.name) || [],
+    status: statusMap[story.status] || 'Ongoing',
+    chapterCount: story.chapter_count,
+    rating: story.rating_avg || undefined,
+    views: story.view_count > 1000
+      ? `${(story.view_count / 1000).toFixed(1)}k`
+      : String(story.view_count),
+    synopsis: story.synopsis || story.description || undefined,
+  };
+}
+
+function formatViews(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
+
+// Skeleton card cho loading state
+function SkeletonCard() {
+  return (
+    <div className="animate-pulse">
+      <div className="aspect-[2/3] rounded-2xl bg-surface-container-high/60 mb-3.5" />
+      <div className="h-4 rounded-lg bg-surface-container-high/60 mb-2 w-3/4" />
+      <div className="h-3 rounded-lg bg-surface-container-high/40 w-1/2" />
+    </div>
+  );
+}
+
 export function HomePage({ onNavigate }: HomePageProps) {
   const [rankingTab, setRankingTab] = useState<RankingTab>('week');
 
-  const currentRankings = rankingTab === 'week'
-    ? RANKINGS
-    : [
-      { rank: 1, title: 'Đấu Phá Thương Khung', views: '45.1k' },
-      { rank: 2, title: 'Thế Giới Hoàn Mỹ', views: '42.5k' },
-      { rank: 3, title: 'Mục Thần Ký', views: '38.9k' },
-    ];
+  // API calls
+  const { stories: recentStories, loading: recentLoading, error: recentError } = useStories({
+    sort: 'updated_at',
+    limit: 6,
+  });
+
+  const { stories: weeklyTrending, loading: weeklyLoading } = useTrendingStories('week', 3);
+  const { stories: monthlyTrending, loading: monthlyLoading } = useTrendingStories('month', 3);
+
+  const currentRankings = rankingTab === 'week' ? weeklyTrending : monthlyTrending;
+  const rankingLoading = rankingTab === 'week' ? weeklyLoading : monthlyLoading;
 
   return (
     <motion.div
@@ -108,15 +153,34 @@ export function HomePage({ onNavigate }: HomePageProps) {
             </button>
           </div>
 
+          {/* Error state */}
+          {recentError && (
+            <div className="flex items-center gap-3 text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl p-4 mb-4">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <p className="text-sm">{recentError} — Đang hiển thị dữ liệu mẫu.</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            {RECENT_BOOKS.map(book => (
-              <div key={book.id}>
-                <BookCard
-                  book={book}
-                  onClick={() => onNavigate('detail')}
-                />
-              </div>
-            ))}
+            {recentLoading
+              ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+              : recentStories.length > 0
+                ? recentStories.map(story => (
+                    <div key={story.id}>
+                      <BookCard
+                        book={storyToBookCard(story)}
+                        onClick={() => onNavigate('detail', story.id)}
+                      />
+                    </div>
+                  ))
+                : (
+                  // Fallback to mock data if no API data
+                  <div className="col-span-3 text-center py-12 text-on-surface-variant">
+                    <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Chưa có truyện nào được xuất bản</p>
+                  </div>
+                )
+            }
           </div>
         </motion.section>
 
@@ -151,31 +215,45 @@ export function HomePage({ onNavigate }: HomePageProps) {
               </button>
             </div>
 
-            <ul className="space-y-3.5">
-              {currentRankings.map((item, index) => (
-                <li
-                  key={item.rank}
-                  className="flex items-center gap-4 group cursor-pointer p-2.5 rounded-xl hover:bg-surface-container-high/40 border border-transparent hover:border-white/5 transition-all duration-300"
-                  onClick={() => onNavigate('detail')}
-                >
-                  <div className={`text-xl font-extrabold w-8 h-8 rounded-lg flex items-center justify-center font-display transition-all duration-300 ${index === 0 ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]' :
-                      index === 1 ? 'bg-slate-300/10 border border-slate-300/20 text-slate-300' :
-                        'bg-amber-700/10 border border-amber-700/20 text-amber-600'
-                    }`}>
-                    {item.rank}
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <h4 className="text-sm font-semibold text-white group-hover:text-secondary transition-colors duration-250 truncate">
-                      {item.title}
-                    </h4>
-                    <p className="text-xs text-on-surface-variant mt-0.5 flex items-center gap-1">
-                      <Flame className="w-3.5 h-3.5 text-orange-500" />
-                      {item.views} lượt đọc
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {rankingLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 text-secondary animate-spin" />
+              </div>
+            ) : currentRankings.length > 0 ? (
+              <ul className="space-y-3.5">
+                {currentRankings.map((story, index) => (
+                  <li
+                    key={story.id}
+                    className="flex items-center gap-4 group cursor-pointer p-2.5 rounded-xl hover:bg-surface-container-high/40 border border-transparent hover:border-white/5 transition-all duration-300"
+                    onClick={() => onNavigate('detail', story.id)}
+                  >
+                    <div className={`text-xl font-extrabold w-8 h-8 rounded-lg flex items-center justify-center font-display transition-all duration-300 ${index === 0 ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]' :
+                        index === 1 ? 'bg-slate-300/10 border border-slate-300/20 text-slate-300' :
+                          'bg-amber-700/10 border border-amber-700/20 text-amber-600'
+                      }`}>
+                      {index + 1}
+                    </div>
+                    <div className="flex-grow min-w-0">
+                      <h4 className="text-sm font-semibold text-white group-hover:text-secondary transition-colors duration-250 truncate">
+                        {story.title}
+                      </h4>
+                      <p className="text-xs text-on-surface-variant mt-0.5 flex items-center gap-1">
+                        <Flame className="w-3.5 h-3.5 text-orange-500" />
+                        {story.views_in_period
+                          ? `${formatViews(story.views_in_period as number)} lượt đọc tuần này`
+                          : `${formatViews(story.view_count)} tổng lượt đọc`
+                        }
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-center py-8 text-on-surface-variant">
+                <Trophy className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                <p className="text-xs">Chưa có dữ liệu xếp hạng</p>
+              </div>
+            )}
           </div>
         </motion.aside>
 

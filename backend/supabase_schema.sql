@@ -146,6 +146,23 @@ CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id  ON public.bookmarks(user_id);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_story_id ON public.bookmarks(story_id);
 
 -- ============================================================
+-- 6b. BẢNG FAVORITES (Yêu thích truyện)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.favorites (
+    id              UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID         NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    story_id        UUID         NOT NULL REFERENCES public.stories(id)  ON DELETE CASCADE,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, story_id)
+);
+
+COMMENT ON TABLE public.favorites IS 'Danh sách truyện yêu thích của người dùng';
+
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id  ON public.favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_story_id ON public.favorites(story_id);
+
+-- ============================================================
 -- 7. BẢNG READING_HISTORY (Lịch sử đọc)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.reading_history (
@@ -261,6 +278,26 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user     ON public.notifications(us
 CREATE INDEX IF NOT EXISTS idx_notifications_unread   ON public.notifications(user_id) WHERE is_read = FALSE;
 
 -- ============================================================
+-- 12b. BẢNG REPORTS (Báo cáo vi phạm)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.reports (
+    id              UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+    story_id        UUID         NOT NULL REFERENCES public.stories(id)  ON DELETE CASCADE,
+    reported_by     UUID         NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    reason          VARCHAR(50)  NOT NULL CHECK (reason IN ('spam', 'copyright', 'inappropriate', 'wrong_category', 'other')),
+    detail          TEXT         DEFAULT '',
+    status          VARCHAR(20)  NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'resolved', 'dismissed')),
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE public.reports IS 'Danh sách báo cáo vi phạm truyện của người dùng';
+
+CREATE INDEX IF NOT EXISTS idx_reports_story_id ON public.reports(story_id);
+CREATE INDEX IF NOT EXISTS idx_reports_reported_by ON public.reports(reported_by);
+CREATE INDEX IF NOT EXISTS idx_reports_status ON public.reports(status);
+
+-- ============================================================
 -- TRIGGERS & FUNCTIONS
 -- ============================================================
 
@@ -278,7 +315,7 @@ DO $$
 DECLARE
     tbl TEXT;
 BEGIN
-    FOREACH tbl IN ARRAY ARRAY['profiles','stories','chapters','bookmarks','ratings','comments']
+    FOREACH tbl IN ARRAY ARRAY['profiles','stories','chapters','bookmarks','favorites','ratings','comments','reports']
     LOOP
         EXECUTE format(
             'CREATE OR REPLACE TRIGGER trg_%s_updated_at
@@ -473,6 +510,7 @@ ALTER TABLE public.profiles         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stories          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chapters         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookmarks        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.favorites        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reading_history  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ratings          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.comments         ENABLE ROW LEVEL SECURITY;
@@ -481,6 +519,7 @@ ALTER TABLE public.story_views      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.genres           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.story_genres     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reports          ENABLE ROW LEVEL SECURITY;
 
 -- ---- PROFILES ----
 DROP POLICY IF EXISTS "Ai cũng có thể xem profile công khai" ON public.profiles;
@@ -557,6 +596,19 @@ CREATE POLICY "Tạo bookmark"
 DROP POLICY IF EXISTS "Xoá bookmark của chính mình" ON public.bookmarks;
 CREATE POLICY "Xoá bookmark của chính mình"
     ON public.bookmarks FOR DELETE USING (auth.uid() = user_id);
+
+-- ---- FAVORITES ----
+DROP POLICY IF EXISTS "Xem favorite của chính mình" ON public.favorites;
+CREATE POLICY "Xem favorite của chính mình"
+    ON public.favorites FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Tạo favorite" ON public.favorites;
+CREATE POLICY "Tạo favorite"
+    ON public.favorites FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Xoá favorite của chính mình" ON public.favorites;
+CREATE POLICY "Xoá favorite của chính mình"
+    ON public.favorites FOR DELETE USING (auth.uid() = user_id);
 
 -- ---- READING HISTORY ----
 DROP POLICY IF EXISTS "Xem lịch sử đọc của chính mình" ON public.reading_history;
@@ -636,6 +688,21 @@ CREATE POLICY "Xem thông báo của chính mình"
 DROP POLICY IF EXISTS "Đánh dấu đã đọc thông báo của mình" ON public.notifications;
 CREATE POLICY "Đánh dấu đã đọc thông báo của mình"
     ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
+
+-- ---- REPORTS ----
+DROP POLICY IF EXISTS "Người dùng đăng nhập được gửi báo cáo" ON public.reports;
+CREATE POLICY "Người dùng đăng nhập được gửi báo cáo"
+    ON public.reports FOR INSERT WITH CHECK (auth.uid() = reported_by);
+
+DROP POLICY IF EXISTS "Người dùng xem báo cáo của chính mình" ON public.reports;
+CREATE POLICY "Người dùng xem báo cáo của chính mình"
+    ON public.reports FOR SELECT USING (auth.uid() = reported_by);
+
+DROP POLICY IF EXISTS "Admin toàn quyền quản lý báo cáo" ON public.reports;
+CREATE POLICY "Admin toàn quyền quản lý báo cáo"
+    ON public.reports FOR ALL USING (
+        auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin')
+    );
 
 -- ============================================================
 -- KẾT THÚC SCHEMA

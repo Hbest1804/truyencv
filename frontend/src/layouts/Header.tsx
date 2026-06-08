@@ -7,7 +7,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 
 interface HeaderProps {
   currentView: ViewState;
-  onNavigate: (view: ViewState) => void;
+  onNavigate: (view: ViewState, storyId?: string) => void;
 }
 
 type AuthModalTab = 'login' | 'register';
