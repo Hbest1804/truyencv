@@ -125,8 +125,49 @@ export const getStories = async ({ page = 1, limit = 20, genre, status, sort = '
 // GET /stories/trending - Truyện xu hướng / xem nhiều nhất
 // ============================================================
 export const getTrendingStories = async ({ period = 'week', limit = 10 }) => {
+  const viewName = period === 'month' ? 'v_rankings_monthly' : 'v_rankings_weekly';
+  const viewsField = period === 'month' ? 'views_this_month' : 'views_this_week';
+
+  try {
+    const { data: rankingData, error: rankingError } = await supabase
+      .from(viewName)
+      .select(`id, ${viewsField}`)
+      .limit(limit);
+
+    if (rankingError) {
+      console.warn(`[getTrendingStories] View error: ${rankingError.message}. Falling back to overall view_count.`);
+    } else if (rankingData && rankingData.length > 0) {
+      const storyIds = rankingData.map((r) => r.id);
+      const viewsMap = new Map(rankingData.map((r) => [r.id, r[viewsField]]));
+
+      const { data: storiesData, error: storiesError } = await supabase
+        .from('stories')
+        .select(STORY_SELECT)
+        .in('id', storyIds);
+
+      if (storiesError) {
+        throw storiesError;
+      }
+
+      const normalizedStories = (storiesData || []).map(normalizeStory);
+
+      // Bảo toàn thứ tự từ view và thêm thông tin views_in_period
+      return storyIds
+        .map((id) => {
+          const story = normalizedStories.find((s) => s.id === id);
+          if (!story) return null;
+          return {
+            ...story,
+            views_in_period: Number(viewsMap.get(id)) || 0,
+          };
+        })
+        .filter(Boolean);
+    }
+  } catch (err) {
+    console.error(`[getTrendingStories] Error fetching from views:`, err);
+  }
+
   // Fallback trực tiếp: lấy theo view_count tổng từ bảng stories
-  // (story_views có thể chưa có RLS phù hợp hoặc chưa có data)
   const { data, error } = await supabase
     .from('stories')
     .select(STORY_SELECT)
@@ -135,9 +176,9 @@ export const getTrendingStories = async ({ period = 'week', limit = 10 }) => {
     .limit(limit);
 
   if (error) {
-    const err = new Error(error.message);
-    err.statusCode = 500;
-    throw err;
+    const errObj = new Error(error.message);
+    errObj.statusCode = 500;
+    throw errObj;
   }
 
   return (data || []).map(normalizeStory);
