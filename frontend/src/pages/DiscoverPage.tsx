@@ -138,7 +138,7 @@ export function DiscoverPage({ onNavigate }: DiscoverPageProps) {
 
   const toggleGenre = (slug: string) => {
     setSelectedGenres(prev =>
-      prev.includes(slug) ? prev.filter(g => g !== slug) : [...prev, slug]
+      prev.includes(slug) ? [] : [slug]
     );
   };
 

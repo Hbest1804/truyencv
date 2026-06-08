@@ -21,7 +21,7 @@ export const listStories = async (req, res, next) => {
     const { page = 1, limit = 20, genre, status, sort } = req.query;
 
     // Giới hạn limit tối đa 100
-    const safeLimit = Math.min(Number(limit) || 20, 100);
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 20, 100));
     const safePage = Math.max(Number(page) || 1, 1);
 
     const result = await getStories({ page: safePage, limit: safeLimit, genre, status, sort });
@@ -48,7 +48,7 @@ export const listStories = async (req, res, next) => {
 export const listTrendingStories = async (req, res, next) => {
   try {
     const { period = 'week', limit = 10 } = req.query;
-    const safeLimit = Math.min(Number(limit) || 10, 50);
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 10, 50));
 
     const stories = await getTrendingStories({ period, limit: safeLimit });
 
@@ -70,7 +70,7 @@ export const searchStoriesHandler = async (req, res, next) => {
   try {
     const { q, genre, status, minRating, sort, page = 1, limit = 20 } = req.query;
 
-    const safeLimit = Math.min(Number(limit) || 20, 100);
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 20, 100));
     const safePage = Math.max(Number(page) || 1, 1);
 
     const result = await searchStories({
