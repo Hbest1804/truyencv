@@ -12,7 +12,7 @@ import {
   reportStoryHandler,
   shareStoryHandler,
 } from '../controllers/storyController.js';
-import { authMiddleware } from '../middlewares/authMiddleware.js';
+import { authMiddleware, optionalAuthMiddleware } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -49,7 +49,7 @@ router.get('/search', searchStoriesHandler);
  * @desc    Chi tiết một truyện (kèm trạng thái follow/favorite nếu đã đăng nhập)
  * @access  Public (optional auth)
  */
-router.get('/:storyId', getStoryDetail);
+router.get('/:storyId', optionalAuthMiddleware, getStoryDetail);
 
 /**
  * @route   POST /api/stories/:storyId/share
@@ -57,7 +57,7 @@ router.get('/:storyId', getStoryDetail);
  * @body    { platform? }
  * @access  Public (optional auth)
  */
-router.post('/:storyId/share', shareStoryHandler);
+router.post('/:storyId/share', optionalAuthMiddleware, shareStoryHandler);
 
 // ──────────────────────────────────────────────
 // PRIVATE ROUTES (yêu cầu Bearer token)

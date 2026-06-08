@@ -252,9 +252,15 @@ export const getStoryById = async (storyId, userId = null) => {
   let userRating = null;
 
   if (userId) {
-    const [bookmarkRes, ratingRes] = await Promise.all([
+    const [bookmarkRes, favoriteRes, ratingRes] = await Promise.all([
       supabase
         .from('bookmarks')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('story_id', storyId)
+        .maybeSingle(),
+      supabase
+        .from('favorites')
         .select('id')
         .eq('user_id', userId)
         .eq('story_id', storyId)
@@ -268,7 +274,7 @@ export const getStoryById = async (storyId, userId = null) => {
     ]);
 
     isFollowing = !!bookmarkRes.data;
-    isFavorited = !!bookmarkRes.data;
+    isFavorited = !!favoriteRes.data;
     userRating = ratingRes.data;
   }
 
@@ -375,7 +381,7 @@ export const favoriteStory = async (storyId, userId) => {
   }
 
   const { data: existing } = await supabase
-    .from('bookmarks')
+    .from('favorites')
     .select('id')
     .eq('user_id', userId)
     .eq('story_id', storyId)
@@ -388,7 +394,7 @@ export const favoriteStory = async (storyId, userId) => {
   }
 
   const { data, error } = await supabase
-    .from('bookmarks')
+    .from('favorites')
     .insert({ user_id: userId, story_id: storyId })
     .select()
     .single();
@@ -407,7 +413,7 @@ export const favoriteStory = async (storyId, userId) => {
 // ============================================================
 export const unfavoriteStory = async (storyId, userId) => {
   const { data: existing } = await supabase
-    .from('bookmarks')
+    .from('favorites')
     .select('id')
     .eq('user_id', userId)
     .eq('story_id', storyId)
@@ -420,7 +426,7 @@ export const unfavoriteStory = async (storyId, userId) => {
   }
 
   const { error } = await supabase
-    .from('bookmarks')
+    .from('favorites')
     .delete()
     .eq('user_id', userId)
     .eq('story_id', storyId);

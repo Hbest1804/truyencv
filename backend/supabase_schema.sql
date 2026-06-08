@@ -146,6 +146,23 @@ CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id  ON public.bookmarks(user_id);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_story_id ON public.bookmarks(story_id);
 
 -- ============================================================
+-- 6b. BẢNG FAVORITES (Yêu thích truyện)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.favorites (
+    id              UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID         NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    story_id        UUID         NOT NULL REFERENCES public.stories(id)  ON DELETE CASCADE,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, story_id)
+);
+
+COMMENT ON TABLE public.favorites IS 'Danh sách truyện yêu thích của người dùng';
+
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id  ON public.favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_story_id ON public.favorites(story_id);
+
+-- ============================================================
 -- 7. BẢNG READING_HISTORY (Lịch sử đọc)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.reading_history (
@@ -278,7 +295,7 @@ DO $$
 DECLARE
     tbl TEXT;
 BEGIN
-    FOREACH tbl IN ARRAY ARRAY['profiles','stories','chapters','bookmarks','ratings','comments']
+    FOREACH tbl IN ARRAY ARRAY['profiles','stories','chapters','bookmarks','favorites','ratings','comments']
     LOOP
         EXECUTE format(
             'CREATE OR REPLACE TRIGGER trg_%s_updated_at
@@ -473,6 +490,7 @@ ALTER TABLE public.profiles         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.stories          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chapters         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookmarks        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.favorites        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reading_history  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ratings          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.comments         ENABLE ROW LEVEL SECURITY;
@@ -557,6 +575,19 @@ CREATE POLICY "Tạo bookmark"
 DROP POLICY IF EXISTS "Xoá bookmark của chính mình" ON public.bookmarks;
 CREATE POLICY "Xoá bookmark của chính mình"
     ON public.bookmarks FOR DELETE USING (auth.uid() = user_id);
+
+-- ---- FAVORITES ----
+DROP POLICY IF EXISTS "Xem favorite của chính mình" ON public.favorites;
+CREATE POLICY "Xem favorite của chính mình"
+    ON public.favorites FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Tạo favorite" ON public.favorites;
+CREATE POLICY "Tạo favorite"
+    ON public.favorites FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Xoá favorite của chính mình" ON public.favorites;
+CREATE POLICY "Xoá favorite của chính mình"
+    ON public.favorites FOR DELETE USING (auth.uid() = user_id);
 
 -- ---- READING HISTORY ----
 DROP POLICY IF EXISTS "Xem lịch sử đọc của chính mình" ON public.reading_history;
