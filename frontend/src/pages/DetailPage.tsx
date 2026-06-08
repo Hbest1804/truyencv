@@ -532,7 +532,7 @@ export function DetailPage({ onNavigate, storyId }: DetailPageProps) {
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-3 mb-6">
               <button
-                onClick={() => onNavigate('reader')}
+                onClick={() => onNavigate('reader', story?.id)}
                 className="bg-secondary text-on-secondary shadow-[0_4px_20px_rgba(6,182,212,0.35)] hover:shadow-[0_4px_25px_rgba(6,182,212,0.5)] font-bold py-3.5 px-8 rounded-xl hover:bg-secondary/90 transition-all duration-300 transform active:scale-98 cursor-pointer flex items-center gap-2.5"
               >
                 <BookOpen className="w-5 h-5" />
@@ -673,7 +673,7 @@ export function DetailPage({ onNavigate, storyId }: DetailPageProps) {
               {displayedChapters.map(ch => (
                 <button
                   key={ch.id}
-                  onClick={() => onNavigate('reader')}
+                  onClick={() => onNavigate('reader', story?.id)}
                   className="group p-4 rounded-xl bg-surface-container-low/40 border border-white/5 hover:border-secondary/25 hover:bg-surface-container-high/40 transition-all duration-300 flex items-center justify-between cursor-pointer text-left"
                 >
                   <div className="flex flex-col">
