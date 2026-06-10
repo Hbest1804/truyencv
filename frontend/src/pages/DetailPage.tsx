@@ -415,6 +415,11 @@ export function DetailPage() {
     chapterPage * chaptersPerPage
   );
 
+  const halfLength = Math.ceil(paginatedChapters.length / 2);
+  const leftChapters = paginatedChapters.slice(0, halfLength);
+  const rightChapters = paginatedChapters.slice(halfLength);
+
+
 
   // ─── Loading State ────────────────────────────────────────────────────────
   if (storyLoading) {
@@ -725,26 +730,52 @@ export function DetailPage() {
               </div>
             ) : (
               <>
-                <div className="flex flex-col gap-3">
-                  {paginatedChapters.map(ch => (
-                    <button
-                      key={ch.id}
-                      onClick={() => navigate(`/stories/${story?.id || storyId}/reader/${ch.id}`)}
-                      className="group p-4 rounded-xl bg-surface-container-low/40 border border-white/5 hover:border-secondary/25 hover:bg-surface-container-high/40 transition-all duration-300 flex items-center justify-between cursor-pointer text-left"
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-white group-hover:text-secondary transition-colors duration-250 font-semibold font-display">
-                          {ch.title}
-                        </span>
-                        <span className="text-[10px] font-bold text-on-surface-variant uppercase mt-1.5 tracking-wider">
-                          Cập nhật {'updated_at' in ch && ch.updated_at ? new Date(ch.updated_at).toLocaleDateString('vi-VN') : (ch as any).updatedAt || 'Vừa xong'}
-                        </span>
-                      </div>
-                      <div className="w-8 h-8 rounded-lg bg-surface-container/60 group-hover:bg-secondary/15 flex items-center justify-center transition-all">
-                        <ArrowRight className="w-4 h-4 text-on-surface-variant group-hover:text-secondary group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                  {/* Cột trái */}
+                  <div className="flex flex-col gap-3">
+                    {leftChapters.map(ch => (
+                      <button
+                        key={ch.id}
+                        onClick={() => navigate(`/stories/${story?.id || storyId}/reader/${ch.id}`)}
+                        className="group p-4 rounded-xl bg-surface-container-low/40 border border-white/5 hover:border-secondary/25 hover:bg-surface-container-high/40 transition-all duration-300 flex items-center justify-between cursor-pointer text-left"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-white group-hover:text-secondary transition-colors duration-250 font-semibold font-display">
+                            {ch.title}
+                          </span>
+                          <span className="text-[10px] font-bold text-on-surface-variant uppercase mt-1.5 tracking-wider">
+                            Cập nhật {'updated_at' in ch && ch.updated_at ? new Date(ch.updated_at).toLocaleDateString('vi-VN') : (ch as any).updatedAt || 'Vừa xong'}
+                          </span>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg bg-surface-container/60 group-hover:bg-secondary/15 flex items-center justify-center transition-all">
+                          <ArrowRight className="w-4 h-4 text-on-surface-variant group-hover:text-secondary group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Cột phải */}
+                  <div className="flex flex-col gap-3">
+                    {rightChapters.map(ch => (
+                      <button
+                        key={ch.id}
+                        onClick={() => navigate(`/stories/${story?.id || storyId}/reader/${ch.id}`)}
+                        className="group p-4 rounded-xl bg-surface-container-low/40 border border-white/5 hover:border-secondary/25 hover:bg-surface-container-high/40 transition-all duration-300 flex items-center justify-between cursor-pointer text-left"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-white group-hover:text-secondary transition-colors duration-250 font-semibold font-display">
+                            {ch.title}
+                          </span>
+                          <span className="text-[10px] font-bold text-on-surface-variant uppercase mt-1.5 tracking-wider">
+                            Cập nhật {'updated_at' in ch && ch.updated_at ? new Date(ch.updated_at).toLocaleDateString('vi-VN') : (ch as any).updatedAt || 'Vừa xong'}
+                          </span>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg bg-surface-container/60 group-hover:bg-secondary/15 flex items-center justify-center transition-all">
+                          <ArrowRight className="w-4 h-4 text-on-surface-variant group-hover:text-secondary group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {totalChapterPages > 1 && (
