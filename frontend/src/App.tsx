@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ViewState } from '@/types';
 import { Header, Footer } from '@/layouts';
-import { HomePage, DiscoverPage, DetailPage, ReaderPage } from '@/pages';
+import { HomePage, DiscoverPage, DetailPage, ReaderPage, ProfilePage } from '@/pages';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -46,6 +46,11 @@ export default function App() {
           {currentView === 'reader' && (
             <motion.div key="reader" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
               <ReaderPage onNavigate={navigate} />
+            </motion.div>
+          )}
+          {currentView === 'profile' && (
+            <motion.div key="profile" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+              <ProfilePage onNavigate={navigate} />
             </motion.div>
           )}
         </AnimatePresence>
