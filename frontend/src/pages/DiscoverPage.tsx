@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, ChevronLeft, ChevronRight, SlidersHorizontal, Check, Loader2, AlertCircle, X } from 'lucide-react';
-import { ViewState, Story } from '@/types';
+import { Story } from '@/types';
 import { BookCard } from '@/components/ui/BookCard';
 import { motion } from 'motion/react';
 import { storyService } from '@/services/storyService';
-
-interface DiscoverPageProps {
-  onNavigate: (view: ViewState, storyId?: string) => void;
-}
+import { useNavigate } from 'react-router-dom';
 
 const GENRES = [
   { label: 'Tiên Hiệp', slug: 'tien-hiep' },
@@ -67,7 +64,8 @@ function SkeletonCard() {
   );
 }
 
-export function DiscoverPage({ onNavigate }: DiscoverPageProps) {
+export function DiscoverPage() {
+  const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
   const [selectedSort, setSelectedSort] = useState('updated_at');
@@ -381,7 +379,7 @@ export function DiscoverPage({ onNavigate }: DiscoverPageProps) {
                   <motion.div key={story.id} variants={itemVariants}>
                     <BookCard
                       book={storyToBookCard(story)}
-                      onClick={() => onNavigate('detail', story.id)}
+                      onClick={() => navigate('/stories/' + story.id)}
                     />
                   </motion.div>
                 ))

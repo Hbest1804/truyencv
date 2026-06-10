@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ViewState } from '@/types';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Header, Footer } from '@/layouts';
 import { HomePage, DiscoverPage, DetailPage, ReaderPage, ProfilePage } from '@/pages';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -11,51 +11,71 @@ const viewVariants = {
   exit: { opacity: 0, y: -15, transition: { duration: 0.25 } }
 };
 
-export default function App() {
-  const [currentView, setCurrentView] = useState<ViewState>('home');
-  const [currentStoryId, setCurrentStoryId] = useState<string | undefined>(undefined);
+function ScrollToTop() {
+  const { pathname } = useLocation();
 
-  // Scroll to top on view change
-  const navigate = (view: ViewState, storyId?: string) => {
-    setCurrentView(view);
-    setCurrentStoryId(storyId);
+  useEffect(() => {
     window.scrollTo(0, 0);
-  };
+  }, [pathname]);
+
+  return null;
+}
+
+export default function App() {
+  const location = useLocation();
 
   return (
     <AuthProvider>
       <div className="min-h-screen flex flex-col font-ui text-on-background bg-background relative selection:bg-primary/20 selection:text-primary">
-        <Header currentView={currentView} onNavigate={navigate} />
+        <ScrollToTop />
+        <Header />
         
         <AnimatePresence mode="wait">
-          {currentView === 'home' && (
-            <motion.div key="home" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
-              <HomePage onNavigate={navigate} />
-            </motion.div>
-          )}
-          {currentView === 'discover' && (
-            <motion.div key="discover" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
-              <DiscoverPage onNavigate={navigate} />
-            </motion.div>
-          )}
-          {currentView === 'detail' && (
-            <motion.div key="detail" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
-              <DetailPage onNavigate={navigate} storyId={currentStoryId} />
-            </motion.div>
-          )}
-          {currentView === 'reader' && (
-            <motion.div key="reader" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
-              <ReaderPage onNavigate={navigate} />
-            </motion.div>
-          )}
-          {currentView === 'profile' && (
-            <motion.div key="profile" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
-              <ProfilePage onNavigate={navigate} />
-            </motion.div>
-          )}
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <HomePage />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/discover"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <DiscoverPage />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/stories/:storyId"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <DetailPage />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/stories/:storyId/reader"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <ReaderPage />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <ProfilePage />
+                </motion.div>
+              }
+            />
+          </Routes>
         </AnimatePresence>
         
-        {currentView !== 'reader' && <Footer currentView={currentView} />}
+        <Footer />
       </div>
     </AuthProvider>
   );

@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, List, Settings as SettingsIcon, ChevronLeft, ChevronRight, X, Minus, Plus } from 'lucide-react';
-import { ViewState } from '@/types';
 import { motion, AnimatePresence } from 'motion/react';
-
-interface ReaderPageProps {
-  onNavigate: (view: ViewState) => void;
-}
+import { useParams, useNavigate } from 'react-router-dom';
 
 type ReaderTheme = 'dark' | 'light' | 'sepia' | 'nordic' | 'forest';
 type ReaderFont = 'serif' | 'sans' | 'mono';
 type ReaderSpacing = 'tight' | 'normal' | 'relaxed';
 
-export function ReaderPage({ onNavigate }: ReaderPageProps) {
+export function ReaderPage() {
+  const { storyId } = useParams<{ storyId: string }>();
+  const navigate = useNavigate();
   const [controlsVisible, setControlsVisible] = useState(true);
   const [readingProgress, setReadingProgress] = useState(35);
   const [theme, setTheme] = useState<ReaderTheme>('dark');
@@ -88,7 +86,7 @@ export function ReaderPage({ onNavigate }: ReaderPageProps) {
           >
             <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-[1280px] mx-auto font-ui">
               <button
-                onClick={() => onNavigate('detail')}
+                onClick={() => navigate('/stories/' + (storyId || 'featured-1'))}
                 className="flex items-center gap-2 text-on-surface-variant hover:text-secondary transition-colors cursor-pointer group"
               >
                 <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1 text-white" />
