@@ -1,12 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 import { supabase, supabaseAdmin } from '../config/database.js';
 
+const checkAdminClient = () => {
+  if (!supabaseAdmin) {
+    const err = new Error('Supabase admin client chưa được cấu hình. Vui lòng thiết lập SUPABASE_SERVICE_ROLE_KEY.');
+    err.statusCode = 500;
+    throw err;
+  }
+};
+
+
 /**
  * Lấy thông tin cá nhân hiện tại
  * @param {string} userId
  * @param {string} userEmail
  */
 export const getUserProfile = async (userId, userEmail) => {
+  checkAdminClient();
   const { data, error } = await supabaseAdmin
     .from('profiles')
     .select('id, username, display_name, avatar_url, bio, role, created_at, updated_at')
@@ -31,6 +41,7 @@ export const getUserProfile = async (userId, userEmail) => {
  * @param {object} updateData
  */
 export const updateUserProfile = async (userId, { username, display_name, bio }) => {
+  checkAdminClient();
   if (username) {
     // Kiểm tra trùng username
     const { data: existingUser, error: checkError } = await supabaseAdmin
@@ -39,6 +50,12 @@ export const updateUserProfile = async (userId, { username, display_name, bio })
       .eq('username', username)
       .neq('id', userId)
       .maybeSingle();
+
+    if (checkError) {
+      const err = new Error(checkError.message);
+      err.statusCode = 500;
+      throw err;
+    }
 
     if (existingUser) {
       const err = new Error('Tên người dùng đã được sử dụng');
@@ -107,27 +124,7 @@ export const uploadUserAvatar = async (userId, base64Data) => {
     throw err;
   }
 
-
-  if (!supabaseAdmin) {
-    const err = new Error('Supabase admin client chưa được cấu hình');
-    err.statusCode = 500;
-    throw err;
-  }
-
-  // Khởi tạo bucket 'avatars' nếu chưa tồn tại
-  const { data: buckets, error: bucketsError } = await supabaseAdmin.storage.listBuckets();
-  if (bucketsError) {
-    throw bucketsError;
-  }
-
-  const bucketExists = buckets?.some((b) => b.name === 'avatars');
-  if (!bucketExists) {
-    const { error: createBucketError } = await supabaseAdmin.storage.createBucket('avatars', {
-      public: true,
-      allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
-    });
-    if (createBucketError) throw createBucketError;
-  }
+  checkAdminClient();
 
   // Đường dẫn lưu file
   const filename = `${userId}/avatar_${Date.now()}.${extension}`;
@@ -175,22 +172,8 @@ export const uploadUserAvatar = async (userId, base64Data) => {
  * @param {string} oldPassword
  * @param {string} newPassword
  */
-export const changeUserPassword = async (userId, oldPassword, newPassword) => {
-  if (!supabaseAdmin) {
-    const err = new Error('Supabase admin client chưa được cấu hình');
-    err.statusCode = 500;
-    throw err;
-  }
-
-  // Lấy email của người dùng từ Supabase Auth
-  const { data: userDetails, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
-  if (getUserError || !userDetails?.user) {
-    const err = new Error('Không tìm thấy thông tin người dùng trong hệ thống xác thực');
-    err.statusCode = 404;
-    throw err;
-  }
-
-  const email = userDetails.user.email;
+export const changeUserPassword = async (userId, email, oldPassword, newPassword) => {
+  checkAdminClient();
 
   // Xác thực mật khẩu cũ bằng cách thử Đăng nhập với client tạm thời để tránh rò rỉ session trên shared client
   const tempClient = createClient(
@@ -235,6 +218,7 @@ export const changeUserPassword = async (userId, oldPassword, newPassword) => {
  * @param {number} limit
  */
 export const getReadingHistory = async (userId, page = 1, limit = 20) => {
+  checkAdminClient();
   const offset = (page - 1) * limit;
 
   const { data, error, count } = await supabaseAdmin
@@ -290,6 +274,7 @@ export const getReadingHistory = async (userId, page = 1, limit = 20) => {
  * @param {number} limit
  */
 export const getLibrary = async (userId, page = 1, limit = 20) => {
+  checkAdminClient();
   const offset = (page - 1) * limit;
 
   const { data, error, count } = await supabaseAdmin
@@ -348,6 +333,7 @@ export const getLibrary = async (userId, page = 1, limit = 20) => {
  * @param {number} limit
  */
 export const getFavorites = async (userId, page = 1, limit = 20) => {
+  checkAdminClient();
   const offset = (page - 1) * limit;
 
   const { data, error, count } = await supabaseAdmin
@@ -397,6 +383,7 @@ export const getFavorites = async (userId, page = 1, limit = 20) => {
  * @param {string} userId
  */
 export const getPublicProfile = async (userId) => {
+  checkAdminClient();
   const { data, error } = await supabaseAdmin
     .from('profiles')
     .select('id, username, display_name, avatar_url, bio, role, created_at')

@@ -76,6 +76,12 @@ export const login = async (req, res, next) => {
 
     const data = await loginUser(email, password);
 
+    if (!data?.user) {
+      const err = new Error('Đăng nhập thất bại: Không tìm thấy thông tin người dùng');
+      err.statusCode = 401;
+      throw err;
+    }
+
     // Lấy thông tin profile thực tế từ DB để trả về đầy đủ cho client
     const { data: profile } = await supabase
       .from('profiles')
@@ -152,6 +158,12 @@ export const refreshToken = async (req, res, next) => {
     }
 
     const data = await refreshUserToken(refresh_token);
+
+    if (!data?.user) {
+      const err = new Error('Làm mới token thất bại: Không tìm thấy thông tin người dùng');
+      err.statusCode = 401;
+      throw err;
+    }
 
     // Lấy thông tin profile thực tế từ DB để trả về đầy đủ cho client khi refresh token
     const { data: profile } = await supabase

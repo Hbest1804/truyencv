@@ -101,7 +101,7 @@ export const changePassword = async (req, res, next) => {
       });
     }
 
-    await changeUserPassword(userId, oldPassword, newPassword);
+    await changeUserPassword(userId, req.user.email, oldPassword, newPassword);
 
     return res.status(200).json({
       success: true,

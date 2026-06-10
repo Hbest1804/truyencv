@@ -78,27 +78,17 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
     }
   }, [user]);
 
-  // Fetch lists based on active tab
+  // Fetch Library
   useEffect(() => {
-    if (!accessToken) return;
+    if (!accessToken || activeTab !== 'library') return;
 
-    const fetchTabInit = async () => {
+    const fetchLibrary = async () => {
       setLoading(true);
       setError(null);
       try {
-        if (activeTab === 'library') {
-          const res = await userService.getLibrary(accessToken, libPage, 10);
-          setLibraryStories(res.data || []);
-          setLibTotalPages(res.pagination?.totalPages || 1);
-        } else if (activeTab === 'favorites') {
-          const res = await userService.getFavorites(accessToken, favPage, 10);
-          setFavoriteStories(res.data || []);
-          setFavTotalPages(res.pagination?.totalPages || 1);
-        } else if (activeTab === 'history') {
-          const res = await userService.getReadingHistory(accessToken, histPage, 10);
-          setReadingHistory(res.data || []);
-          setHistTotalPages(res.pagination?.totalPages || 1);
-        }
+        const res = await userService.getLibrary(accessToken, libPage, 10);
+        setLibraryStories(res.data || []);
+        setLibTotalPages(res.pagination?.totalPages || 1);
       } catch (err: any) {
         setError(err.message || 'Lỗi khi tải dữ liệu');
       } finally {
@@ -106,8 +96,50 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
       }
     };
 
-    fetchTabInit();
-  }, [activeTab, accessToken, libPage, favPage, histPage]);
+    fetchLibrary();
+  }, [accessToken, activeTab, libPage]);
+
+  // Fetch Favorites
+  useEffect(() => {
+    if (!accessToken || activeTab !== 'favorites') return;
+
+    const fetchFavorites = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await userService.getFavorites(accessToken, favPage, 10);
+        setFavoriteStories(res.data || []);
+        setFavTotalPages(res.pagination?.totalPages || 1);
+      } catch (err: any) {
+        setError(err.message || 'Lỗi khi tải dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFavorites();
+  }, [accessToken, activeTab, favPage]);
+
+  // Fetch History
+  useEffect(() => {
+    if (!accessToken || activeTab !== 'history') return;
+
+    const fetchHistory = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await userService.getReadingHistory(accessToken, histPage, 10);
+        setReadingHistory(res.data || []);
+        setHistTotalPages(res.pagination?.totalPages || 1);
+      } catch (err: any) {
+        setError(err.message || 'Lỗi khi tải dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, [accessToken, activeTab, histPage]);
 
   const showToast = (type: 'success' | 'error', message: string) => {
     if (type === 'success') {
