@@ -55,3 +55,45 @@ export const optionalAuthMiddleware = async (req, res, next) => {
   }
 };
 
+// Middleware phân quyền dựa trên role trong bảng profiles
+export const requireRole = (allowedRoles) => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Access token is missing or invalid'
+        });
+      }
+
+      // Lấy thông tin profile từ database để kiểm tra role chính xác
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', req.user.id)
+        .single();
+
+      if (error || !profile) {
+        return res.status(403).json({
+          success: false,
+          message: 'User profile not found or access denied'
+        });
+      }
+
+      if (!allowedRoles.includes(profile.role)) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied: requires one of the following roles: ${allowedRoles.join(', ')}`
+        });
+      }
+
+      // Đính kèm profile role vào user object
+      req.user.role = profile.role;
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+
