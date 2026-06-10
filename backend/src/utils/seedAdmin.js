@@ -66,7 +66,7 @@ export const seedAdminAccount = async () => {
     }
 
     // Cập nhật vai trò 'admin' trong bảng profiles trực tiếp bằng admin client
-    if (data?.user?.id) {
+    if (data?.user?.id && supabaseAdmin) {
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({ role: 'admin' })
@@ -75,6 +75,8 @@ export const seedAdminAccount = async () => {
       if (profileError) {
         console.error('❌ [SeedAdmin] Cập nhật vai trò Admin trong profiles thất bại:', profileError.message);
       }
+    } else if (data?.user?.id && !supabaseAdmin) {
+      console.warn('⚠️ [SeedAdmin] Không thể cập nhật vai trò Admin vì supabaseAdmin chưa được cấu hình');
     }
 
     console.log('==========================================');
