@@ -13,7 +13,6 @@ export function ReaderPage() {
   const { storyId, chapterId } = useParams<{ storyId: string; chapterId: string }>();
   const navigate = useNavigate();
   
-  const [controlsVisible, setControlsVisible] = useState(true);
   const [readingProgress, setReadingProgress] = useState(0);
   const [theme, setTheme] = useState<ReaderTheme>('sepia');
   const [font, setFont] = useState<ReaderFont>('serif');
@@ -61,39 +60,22 @@ export function ReaderPage() {
     }
   }, [activeChapter?.id]);
 
-  // 2. Handle scroll behaviors
+  // 2. Handle scroll: track progress only (bars are always visible)
   useEffect(() => {
-    let lastScrollY = window.scrollY;
-    
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
-      if (currentScrollY > 50 && currentScrollY > lastScrollY && controlsVisible && !settingsOpen && !chaptersDrawerOpen) {
-        setControlsVisible(false);
-      } else if (currentScrollY < lastScrollY && !controlsVisible) {
-        setControlsVisible(true);
-      }
-      lastScrollY = currentScrollY;
-
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (scrollHeight > 0) {
         const scrolled = (currentScrollY / scrollHeight) * 100;
         const boundedScrolled = Math.max(0, Math.min(scrolled, 100));
         setReadingProgress(boundedScrolled);
-        
-        // Debounced save progress
         saveProgress(boundedScrolled);
-
-        // Mark as read when close to bottom
-        if (boundedScrolled >= 95) {
-          markAsRead();
-        }
+        if (boundedScrolled >= 95) markAsRead();
       }
     };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [controlsVisible, settingsOpen, chaptersDrawerOpen, saveProgress, markAsRead]);
+  }, [saveProgress, markAsRead]);
 
   const themeClasses: Record<ReaderTheme, string> = {
     // ── Sáng ──
@@ -166,74 +148,57 @@ export function ReaderPage() {
     <div
       className={`min-h-screen transition-colors duration-300 ${themeClasses[theme]} ${fontClasses[font]}`}
       onClick={() => {
-        if (settingsOpen) {
-          setSettingsOpen(false);
-        } else if (chaptersDrawerOpen) {
-          setChaptersDrawerOpen(false);
-        } else {
-          setControlsVisible(!controlsVisible);
-        }
+        if (settingsOpen) setSettingsOpen(false);
+        else if (chaptersDrawerOpen) setChaptersDrawerOpen(false);
       }}
     >
-      {/* Top Reader Control Bar */}
-      <AnimatePresence>
-        {controlsVisible && (
-          <motion.header
-            initial={{ y: "-100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "-100%", opacity: 0 }}
-            transition={{ type: "spring", stiffness: 280, damping: 28 }}
-            className={`fixed top-0 w-full z-50 backdrop-blur-md border-b shadow-sm ${barBg}`}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-[1280px] mx-auto font-ui">
-              <button
-                onClick={() => navigate(`/stories/${storyId}`)}
-                className={`flex items-center gap-2 transition-colors cursor-pointer group ${barText} hover:text-secondary`}
-              >
-                <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-                <span className="hidden sm:inline font-bold text-sm">Trở lại</span>
-              </button>
-              
-              <div className="flex flex-col items-center text-center max-w-[200px] md:max-w-md">
-                <h1 className={`font-bold truncate text-xs md:text-base font-display ${barText}`}>
-                  Chương {activeChapter.chapter_number}: {activeChapter.title}
-                </h1>
-                <span className={`text-[9px] font-bold tracking-wider uppercase mt-0.5 ${barMuted}`}>
-                  {story?.title || 'Đang tải truyện...'}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-2.5">
-                <button
-                  onClick={() => setChaptersDrawerOpen(!chaptersDrawerOpen)}
-                  className={`transition-colors p-2 rounded-full cursor-pointer ${barText} ${chaptersDrawerOpen ? 'text-secondary' : 'hover:text-secondary'}`}
-                >
-                  <List className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setSettingsOpen(!settingsOpen)}
-                  className={`transition-colors p-2 rounded-full cursor-pointer ${barText} ${settingsOpen ? 'text-secondary' : 'hover:text-secondary'}`}
-                >
-                  <SettingsIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </motion.header>
-        )}
-      </AnimatePresence>
-
-      {/* Reading Progress Indicator */}
-      <div
-        className={`fixed top-16 left-0 w-full h-[3px] z-50 bg-white/10 transition-all duration-300 ${
-          controlsVisible ? 'opacity-100' : 'opacity-0'
-        }`}
+      {/* Top Reader Control Bar — always visible */}
+      <header
+        className={`fixed top-0 w-full z-50 backdrop-blur-md border-b shadow-sm ${barBg}`}
+        onClick={e => e.stopPropagation()}
       >
-        <div
-          className="h-full bg-secondary transition-all duration-150 ease-out shadow-[0_0_8px_rgba(6,182,212,0.6)]"
-          style={{ width: `${readingProgress}%` }}
-        ></div>
-      </div>
+        <div className="flex justify-between items-center h-14 px-4 md:px-8 max-w-[1280px] mx-auto font-ui">
+          <button
+            onClick={() => navigate(`/stories/${storyId}`)}
+            className={`flex items-center gap-2 transition-colors cursor-pointer group ${barText} hover:text-secondary`}
+          >
+            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+            <span className="hidden sm:inline font-bold text-sm">Trở lại</span>
+          </button>
+          
+          <div className="flex flex-col items-center text-center max-w-[200px] md:max-w-md">
+            <h1 className={`font-bold truncate text-xs md:text-sm font-display ${barText}`}>
+              Chương {activeChapter.chapter_number}: {activeChapter.title}
+            </h1>
+            <span className={`text-[9px] font-bold tracking-wider uppercase mt-0.5 ${barMuted}`}>
+              {story?.title || 'Đang tải truyện...'}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setChaptersDrawerOpen(!chaptersDrawerOpen)}
+              className={`transition-colors p-2 rounded-full cursor-pointer ${chaptersDrawerOpen ? 'text-secondary' : `${barText} hover:text-secondary`}`}
+            >
+              <List className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setSettingsOpen(!settingsOpen)}
+              className={`transition-colors p-2 rounded-full cursor-pointer ${settingsOpen ? 'text-secondary' : `${barText} hover:text-secondary`}`}
+            >
+              <SettingsIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Reading Progress Bar — dưới header */}
+        <div className={`w-full h-[3px] ${isDarkTheme ? 'bg-white/8' : 'bg-black/8'}`}>
+          <div
+            className="h-full bg-secondary transition-all duration-150 ease-out shadow-[0_0_6px_rgba(6,182,212,0.5)]"
+            style={{ width: `${readingProgress}%` }}
+          />
+        </div>
+      </header>
 
       {/* Main Reading Canvas */}
       <main className="w-full max-w-[700px] mx-auto px-6 md:px-4 pt-28 pb-52 relative z-10 select-text">
@@ -275,7 +240,7 @@ export function ReaderPage() {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className={`fixed bottom-0 left-0 w-full z-50 backdrop-blur-xl border-t p-6 md:p-8 rounded-t-3xl shadow-2xl font-ui ${barBg}`}
+            className={`fixed bottom-0 left-0 w-full z-[80] backdrop-blur-xl border-t p-6 md:p-8 rounded-t-3xl shadow-2xl font-ui ${barBg}`}
             onClick={e => e.stopPropagation()}
           >
             <div className="max-w-[640px] mx-auto space-y-6">
@@ -463,50 +428,42 @@ export function ReaderPage() {
         )}
       </AnimatePresence>
 
-      {/* Bottom Navigation & Controls */}
-      <AnimatePresence>
-        {controlsVisible && (
-          <motion.footer
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "100%", opacity: 0 }}
-            transition={{ type: "spring", stiffness: 280, damping: 28 }}
-            className={`fixed bottom-0 w-full z-50 backdrop-blur-md border-t shadow-lg font-ui ${barBg}`}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="max-w-[720px] mx-auto px-4 md:px-0 py-4" onClick={e => e.stopPropagation()}>
-              <div className={`flex justify-between items-center mb-3 text-xs ${barMuted}`}>
-                <div>
-                  Tiến độ: <span className={`font-bold ${barText}`}>{Math.round(readingProgress)}%</span>
-                </div>
-                <div className={`font-bold uppercase text-[10px] tracking-wider ${barText}`}>
-                  Chương {currentChapterNumber} / {totalChapters}
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <button
-                  disabled={!hasPrev}
-                  onClick={goToPrevChapter}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl transition-all group text-sm font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${barText} ${isDarkTheme ? 'hover:bg-white/8' : 'hover:bg-black/6'}`}
-                >
-                  <ChevronLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
-                  Chương trước
-                </button>
-                
-                <button
-                  disabled={!hasNext}
-                  onClick={goToNextChapter}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/90 text-white shadow-[0_4px_15px_rgba(6,182,212,0.3)] transition-all group text-sm font-bold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  Chương tiếp
-                  <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
-                </button>
-              </div>
+      {/* Bottom Navigation & Controls — always visible */}
+      <footer
+        className={`fixed bottom-0 w-full z-50 backdrop-blur-md border-t shadow-lg font-ui ${barBg}`}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="max-w-[720px] mx-auto px-4 md:px-0 py-3">
+          <div className={`flex justify-between items-center mb-2 text-xs ${barMuted}`}>
+            <div>
+              Tiến độ: <span className={`font-bold ${barText}`}>{Math.round(readingProgress)}%</span>
             </div>
-          </motion.footer>
-        )}
-      </AnimatePresence>
+            <div className={`font-bold uppercase text-[10px] tracking-wider ${barText}`}>
+              Chương {currentChapterNumber} / {totalChapters}
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <button
+              disabled={!hasPrev}
+              onClick={goToPrevChapter}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition-all group text-sm font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${barText} ${isDarkTheme ? 'hover:bg-white/8' : 'hover:bg-black/6'}`}
+            >
+              <ChevronLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
+              Chương trước
+            </button>
+            
+            <button
+              disabled={!hasNext}
+              onClick={goToNextChapter}
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/90 text-white shadow-[0_4px_15px_rgba(6,182,212,0.3)] transition-all group text-sm font-bold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Chương tiếp
+              <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+            </button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
