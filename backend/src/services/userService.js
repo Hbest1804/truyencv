@@ -84,6 +84,13 @@ export const uploadUserAvatar = async (userId, base64Data) => {
   let extension = 'jpg';
   let buffer;
 
+  // Kiểm tra sơ bộ độ dài chuỗi base64 trước khi chuyển sang Buffer để tránh DoS/OOM (2MB binary = ~2.7MB base64)
+  if (base64Data.length > 3 * 1024 * 1024) {
+    const err = new Error('Ảnh đại diện quá lớn. Vui lòng chọn ảnh nhỏ hơn 2MB');
+    err.statusCode = 400;
+    throw err;
+  }
+
   if (matches && matches.length === 3) {
     mimeType = matches[1];
     extension = mimeType.split('/')[1] || 'jpg';
@@ -92,6 +99,14 @@ export const uploadUserAvatar = async (userId, base64Data) => {
     // Dự phòng khi chỉ gửi chuỗi base64 thô
     buffer = Buffer.from(base64Data, 'base64');
   }
+
+  // Kiểm tra kích thước file (giới hạn 2MB)
+  if (buffer.length > 2 * 1024 * 1024) {
+    const err = new Error('Ảnh đại diện quá lớn. Vui lòng chọn ảnh nhỏ hơn 2MB');
+    err.statusCode = 400;
+    throw err;
+  }
+
 
   if (!supabaseAdmin) {
     const err = new Error('Supabase admin client chưa được cấu hình');
