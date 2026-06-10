@@ -66,10 +66,10 @@ export const requireRole = (allowedRoles) => {
         });
       }
 
-      // Lấy thông tin profile từ database để kiểm tra role chính xác
+      // Lấy thông tin profile từ database để kiểm tra role và trạng thái bị ban chính xác
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, is_banned')
         .eq('id', req.user.id)
         .single();
 
@@ -77,6 +77,13 @@ export const requireRole = (allowedRoles) => {
         return res.status(403).json({
           success: false,
           message: 'User profile not found or access denied'
+        });
+      }
+
+      if (profile.is_banned) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: user account is banned'
         });
       }
 

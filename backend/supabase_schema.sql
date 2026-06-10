@@ -335,8 +335,8 @@ BEGIN
     INSERT INTO public.profiles (id, username, display_name, avatar_url, role)
     VALUES (
         NEW.id,
-        COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
-        COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1)),
+        COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1), 'user_' || substr(NEW.id::text, 1, 8)),
+        COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1), 'User ' || substr(NEW.id::text, 1, 8)),
         NEW.raw_user_meta_data->>'avatar_url',
         'reader'
     );

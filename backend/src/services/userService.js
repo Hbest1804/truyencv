@@ -103,11 +103,6 @@ export const uploadUserAvatar = async (userId, base64Data) => {
     throw err;
   }
 
-  const matches = base64Data.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
-  let mimeType = 'image/jpeg';
-  let extension = 'jpg';
-  let buffer;
-
   // Kiểm tra sơ bộ độ dài chuỗi base64 trước khi chuyển sang Buffer để tránh DoS/OOM (2MB binary = ~2.7MB base64)
   if (base64Data.length > 3 * 1024 * 1024) {
     const err = new Error('Ảnh đại diện quá lớn. Vui lòng chọn ảnh nhỏ hơn 2MB');
@@ -115,22 +110,25 @@ export const uploadUserAvatar = async (userId, base64Data) => {
     throw err;
   }
 
+  const matches = base64Data.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) {
+    const err = new Error('Định dạng ảnh không hợp lệ. Vui lòng sử dụng định dạng Data URL (data:image/...;base64,...)');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const mimeType = matches[1];
   const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-  if (matches && matches.length === 3) {
-    mimeType = matches[1];
-    if (!allowedMimeTypes.includes(mimeType)) {
-      const err = new Error('Chỉ chấp nhận các định dạng ảnh: jpeg, png, gif, webp');
-      err.statusCode = 400;
-      throw err;
-    }
-    extension = mimeType.split('/')[1] || 'jpg';
-    if (extension === 'jpeg') extension = 'jpg';
-    buffer = Buffer.from(matches[2], 'base64');
-  } else {
-    // Dự phòng khi chỉ gửi chuỗi base64 thô
-    buffer = Buffer.from(base64Data, 'base64');
+  if (!allowedMimeTypes.includes(mimeType)) {
+    const err = new Error('Chỉ chấp nhận các định dạng ảnh: jpeg, png, gif, webp');
+    err.statusCode = 400;
+    throw err;
   }
+
+  let extension = mimeType.split('/')[1] || 'jpg';
+  if (extension === 'jpeg') extension = 'jpg';
+  const buffer = Buffer.from(matches[2], 'base64');
 
   // Kiểm tra kích thước file (giới hạn 2MB)
   if (buffer.length > 2 * 1024 * 1024) {
