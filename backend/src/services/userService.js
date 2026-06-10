@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { supabase, supabaseAdmin } from '../config/database.js';
 
 /**
@@ -176,8 +177,18 @@ export const changeUserPassword = async (userId, oldPassword, newPassword) => {
 
   const email = userDetails.user.email;
 
-  // Xác thực mật khẩu cũ bằng cách thử Đăng nhập
-  const { error: signInError } = await supabase.auth.signInWithPassword({
+  // Xác thực mật khẩu cũ bằng cách thử Đăng nhập với client tạm thời để tránh rò rỉ session trên shared client
+  const tempClient = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
+  const { error: signInError } = await tempClient.auth.signInWithPassword({
     email,
     password: oldPassword,
   });
