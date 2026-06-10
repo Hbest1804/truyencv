@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { ViewState, Story } from '@/types';
+import { Story } from '@/types';
 import { userService } from '@/services/userService';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   User as UserIcon,
@@ -21,13 +22,10 @@ import {
   Bookmark
 } from 'lucide-react';
 
-interface ProfilePageProps {
-  onNavigate: (view: ViewState, storyId?: string) => void;
-}
-
 type TabType = 'profile' | 'library' | 'favorites' | 'history' | 'password';
 
-export function ProfilePage({ onNavigate }: ProfilePageProps) {
+export function ProfilePage() {
+  const navigate = useNavigate();
   const { user, accessToken, isAuthenticated, logout, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   
@@ -65,9 +63,9 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
   // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      onNavigate('home');
+      navigate('/');
     }
-  }, [isAuthenticated, onNavigate]);
+  }, [isAuthenticated, navigate]);
 
   // Sync user data to local forms when user state changes
   useEffect(() => {
@@ -522,7 +520,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                         <div className="flex-grow min-w-0 flex flex-col justify-between">
                           <div>
                             <h4
-                              onClick={() => onNavigate('detail', story.id)}
+                              onClick={() => navigate('/stories/' + story.id)}
                               className="text-base font-bold text-white hover:text-secondary cursor-pointer transition-colors truncate"
                             >
                               {story.title}
@@ -547,7 +545,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                             </div>
                             <div className="flex gap-2">
                               <button
-                                onClick={() => onNavigate('detail', story.id)}
+                                onClick={() => navigate('/stories/' + story.id)}
                                 className="px-3.5 py-1.5 bg-white/5 border border-white/10 hover:border-white/20 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                               >
                                 Chi tiết <ExternalLink className="w-3 h-3" />
@@ -587,7 +585,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                   <Bookmark className="w-12 h-12 mx-auto mb-3 opacity-25" />
                   <p className="text-sm">Chưa có truyện nào trong tủ sách của bạn</p>
                   <button
-                    onClick={() => onNavigate('discover')}
+                    onClick={() => navigate('/discover')}
                     className="mt-4 text-xs font-bold text-secondary hover:text-secondary-fixed transition-colors flex items-center gap-1 mx-auto cursor-pointer"
                   >
                     Khám phá truyện ngay <ChevronRight className="w-3.5 h-3.5" />
@@ -617,7 +615,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                         <div
                           key={item.id}
                           className="bg-surface-container/20 border border-white/5 rounded-2xl p-3 hover:border-white/10 transition-all flex flex-col group cursor-pointer"
-                          onClick={() => onNavigate('detail', story.id)}
+                          onClick={() => navigate('/stories/' + story.id)}
                         >
                           <div className="aspect-[2/3] rounded-xl overflow-hidden mb-3 bg-surface-container relative">
                             <img
@@ -668,7 +666,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                   <Heart className="w-12 h-12 mx-auto mb-3 opacity-25" />
                   <p className="text-sm">Chưa có truyện nào trong danh sách yêu thích</p>
                   <button
-                    onClick={() => onNavigate('discover')}
+                    onClick={() => navigate('/discover')}
                     className="mt-4 text-xs font-bold text-secondary hover:text-secondary-fixed transition-colors flex items-center gap-1 mx-auto cursor-pointer"
                   >
                     Khám phá truyện ngay <ChevronRight className="w-3.5 h-3.5" />
@@ -710,7 +708,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                           <div>
                             <div className="flex justify-between items-start gap-2">
                               <h4
-                                onClick={() => onNavigate('detail', story.id)}
+                                onClick={() => navigate('/stories/' + story.id)}
                                 className="text-sm md:text-base font-bold text-white hover:text-secondary cursor-pointer transition-colors truncate"
                               >
                                 {story.title}
@@ -737,7 +735,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                             </div>
                             
                             <button
-                              onClick={() => onNavigate('detail', story.id)} // In full app, direct to Reader page for that chapter
+                              onClick={() => navigate('/stories/' + story.id)} // In full app, direct to Reader page for that chapter
                               className="px-3.5 py-1 bg-secondary text-on-secondary shadow-sm hover:bg-secondary/90 text-xxs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer"
                             >
                               Đọc tiếp <ChevronRight className="w-3 h-3" />
@@ -776,7 +774,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                   <History className="w-12 h-12 mx-auto mb-3 opacity-25" />
                   <p className="text-sm">Chưa có lịch sử đọc truyện</p>
                   <button
-                    onClick={() => onNavigate('discover')}
+                    onClick={() => navigate('/discover')}
                     className="mt-4 text-xs font-bold text-secondary hover:text-secondary-fixed transition-colors flex items-center gap-1 mx-auto cursor-pointer"
                   >
                     Khám phá truyện ngay <ChevronRight className="w-3.5 h-3.5" />

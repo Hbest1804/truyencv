@@ -1,8 +1,9 @@
-import { ViewState } from '@/types';
+import { useLocation } from 'react-router-dom';
 import { Github, Twitter, Globe, Send } from 'lucide-react';
 
-export function Footer({ currentView }: { currentView: ViewState }) {
-  if (currentView === 'reader') return null;
+export function Footer() {
+  const location = useLocation();
+  if (location.pathname.endsWith('/reader')) return null;
 
   return (
     <footer className="bg-surface-container-lowest/80 backdrop-blur-md w-full pt-16 pb-8 border-t border-white/5 mt-auto">

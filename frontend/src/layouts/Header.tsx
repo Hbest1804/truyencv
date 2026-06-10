@@ -1,26 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell, Search, Settings, Menu, X, Home, Compass, Bookmark, MessageSquare, LogOut, ChevronDown, UserCircle } from 'lucide-react';
-import { ViewState } from '@/types';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/hooks/useAuth';
-import { AuthModal } from '@/components/auth/AuthModal';
 
-interface HeaderProps {
-  currentView: ViewState;
-  onNavigate: (view: ViewState, storyId?: string) => void;
-}
-
-type AuthModalTab = 'login' | 'register';
-
-export function Header({ currentView, onNavigate }: HeaderProps) {
+export function Header() {
   const { isAuthenticated, user, logout, isLoading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState<AuthModalTab>('login');
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const path = location.pathname;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,11 +34,6 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const openAuthModal = (tab: AuthModalTab) => {
-    setAuthModalTab(tab);
-    setAuthModalOpen(true);
-    setMobileMenuOpen(false);
-  };
 
   const handleLogout = async () => {
     setUserDropdownOpen(false);
@@ -59,7 +48,8 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
     return (user?.username || user?.email || 'U')[0].toUpperCase();
   };
 
-  if (currentView === 'reader') return null;
+  // Hide header on reader view
+  if (path.endsWith('/reader')) return null;
 
   return (
     <>
@@ -71,8 +61,8 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
       >
         <div className="max-w-[1280px] mx-auto px-4 md:px-6 flex justify-between items-center">
           {/* Logo */}
-          <button
-            onClick={() => onNavigate('home')}
+          <Link
+            to="/"
             className="flex items-center gap-2 group cursor-pointer text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.4)] group-hover:shadow-[0_0_20px_rgba(6,182,212,0.6)] transition-all duration-300">
@@ -81,21 +71,21 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
             <span className="text-xl md:text-2xl font-bold tracking-tight text-white font-display group-hover:text-gradient-primary transition-all duration-300">
               Truyện HT
             </span>
-          </button>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1 bg-surface-container/40 p-1.5 rounded-full border border-white/5 backdrop-blur-md">
             {[
-              { id: 'home', label: 'Trang chủ', view: 'home' as ViewState },
-              { id: 'discover', label: 'Khám phá', view: 'discover' as ViewState },
-              { id: 'library', label: 'Tủ sách', view: null },
-              { id: 'community', label: 'Cộng đồng', view: null },
+              { id: 'home', label: 'Trang chủ', to: '/' },
+              { id: 'discover', label: 'Khám phá', to: '/discover' },
+              { id: 'library', label: 'Tủ sách', to: null },
+              { id: 'community', label: 'Cộng đồng', to: null },
             ].map((tab) => {
-              const isActive = currentView === tab.view;
-              return (
-                <button
+              const isActive = tab.to ? (tab.to === '/' ? path === '/' : path.startsWith(tab.to)) : false;
+              return tab.to ? (
+                <Link
                   key={tab.id}
-                  onClick={() => tab.view && onNavigate(tab.view)}
+                  to={tab.to}
                   className={`relative px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${isActive
                       ? 'text-white'
                       : 'text-on-surface-variant hover:text-white'
@@ -108,6 +98,14 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
+                  {tab.label}
+                </Link>
+              ) : (
+                <button
+                  key={tab.id}
+                  className="relative px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 text-on-surface-variant/40 cursor-not-allowed"
+                  disabled
+                >
                   {tab.label}
                 </button>
               );
@@ -188,7 +186,7 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
                         <div className="p-1.5">
                           <button
                             onClick={() => {
-                              onNavigate('profile');
+                              navigate('/profile');
                               setUserDropdownOpen(false);
                             }}
                             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
@@ -215,24 +213,24 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
               </>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
-                <button
+                <Link
                   id="header-login-btn"
-                  onClick={() => openAuthModal('login')}
-                  className="px-4 py-1.5 rounded-full text-sm font-semibold text-on-surface-variant hover:text-white border border-white/10 hover:border-white/20 transition-all hover:bg-white/5"
+                  to="/login"
+                  className="px-4 py-1.5 rounded-full text-sm font-semibold text-on-surface-variant hover:text-white border border-white/10 hover:border-white/20 transition-all hover:bg-white/5 text-center flex items-center justify-center"
                 >
                   Đăng nhập
-                </button>
-                <button
+                </Link>
+                <Link
                   id="header-register-btn"
-                  onClick={() => openAuthModal('register')}
-                  className="px-4 py-1.5 rounded-full text-sm font-semibold text-white transition-all"
+                  to="/register"
+                  className="px-4 py-1.5 rounded-full text-sm font-semibold text-white transition-all text-center flex items-center justify-center"
                   style={{
                     background: 'linear-gradient(135deg, #a855f7 0%, #06b6d4 100%)',
                     boxShadow: '0 0 14px rgba(168,85,247,0.3)',
                   }}
                 >
                   Đăng ký
-                </button>
+                </Link>
               </div>
             )}
 
@@ -279,7 +277,7 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
                 <div
                   onClick={() => {
                     if (isAuthenticated) {
-                      onNavigate('profile');
+                      navigate('/profile');
                       setMobileMenuOpen(false);
                     }
                   }}
@@ -302,28 +300,33 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
 
                 <nav className="flex flex-col gap-2">
                   {[
-                    { id: 'home', label: 'Trang chủ', view: 'home' as ViewState, icon: Home },
-                    { id: 'discover', label: 'Khám phá', view: 'discover' as ViewState, icon: Compass },
-                    { id: 'library', label: 'Tủ sách', view: null, icon: Bookmark },
-                    { id: 'community', label: 'Cộng đồng', view: null, icon: MessageSquare },
+                    { id: 'home', label: 'Trang chủ', to: '/', icon: Home },
+                    { id: 'discover', label: 'Khám phá', to: '/discover', icon: Compass },
+                    { id: 'library', label: 'Tủ sách', to: null, icon: Bookmark },
+                    { id: 'community', label: 'Cộng đồng', to: null, icon: MessageSquare },
                   ].map((item) => {
                     const Icon = item.icon;
-                    const isActive = currentView === item.view;
-                    return (
-                      <button
+                    const isActive = item.to ? (item.to === '/' ? path === '/' : path.startsWith(item.to)) : false;
+                    return item.to ? (
+                      <Link
                         key={item.id}
-                        onClick={() => {
-                          if (item.view) {
-                            onNavigate(item.view);
-                            setMobileMenuOpen(false);
-                          }
-                        }}
+                        to={item.to}
+                        onClick={() => setMobileMenuOpen(false)}
                         className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-semibold transition-all ${isActive
                             ? 'bg-gradient-to-r from-primary/10 to-secondary/10 border border-white/5 text-white'
                             : 'text-on-surface-variant hover:bg-white/5 hover:text-white'
                           }`}
                       >
                         <Icon className={`w-4 h-4 ${isActive ? 'text-secondary' : ''}`} />
+                        {item.label}
+                      </Link>
+                    ) : (
+                      <button
+                        key={item.id}
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-semibold text-on-surface-variant/40 cursor-not-allowed text-left"
+                        disabled
+                      >
+                        <Icon className="w-4 h-4" />
                         {item.label}
                       </button>
                     );
@@ -343,19 +346,21 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => openAuthModal('login')}
-                    className="flex-1 py-2 px-3 rounded-lg border border-white/10 text-on-surface-variant hover:text-white text-xs font-semibold transition-colors"
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 py-2 px-3 rounded-lg border border-white/10 text-on-surface-variant hover:text-white text-xs font-semibold transition-colors text-center"
                   >
                     Đăng nhập
-                  </button>
-                  <button
-                    onClick={() => openAuthModal('register')}
-                    className="flex-1 py-2 px-3 rounded-lg text-white text-xs font-semibold transition-colors"
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 py-2 px-3 rounded-lg text-white text-xs font-semibold transition-colors text-center"
                     style={{ background: 'linear-gradient(135deg, #a855f7, #06b6d4)' }}
                   >
                     Đăng ký
-                  </button>
+                  </Link>
                 </div>
               )}
             </motion.div>
@@ -363,11 +368,6 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
         )}
       </AnimatePresence>
 
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        initialTab={authModalTab}
-      />
     </>
   );
 }

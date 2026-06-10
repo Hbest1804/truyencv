@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import { FEATURED_BOOK } from '@/constants/mockData';
-import { ViewState, Story } from '@/types';
+import { Story } from '@/types';
 import { BookCard } from '@/components/ui/BookCard';
 import { motion } from 'motion/react';
 import { Sparkles, Flame, BookOpen, ChevronRight, Trophy, Loader2, AlertCircle } from 'lucide-react';
 import { useStories, useTrendingStories } from '@/hooks/useStory';
-
-interface HomePageProps {
-  onNavigate: (view: ViewState, storyId?: string) => void;
-}
+import { useNavigate } from 'react-router-dom';
 
 type RankingTab = 'week' | 'month';
 
@@ -67,7 +64,8 @@ function SkeletonCard() {
   );
 }
 
-export function HomePage({ onNavigate }: HomePageProps) {
+export function HomePage() {
+  const navigate = useNavigate();
   const [rankingTab, setRankingTab] = useState<RankingTab>('week');
 
   // API calls
@@ -110,13 +108,13 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <button
-              onClick={() => onNavigate('detail')}
+              onClick={() => navigate('/stories/' + FEATURED_BOOK.id)}
               className="bg-secondary text-on-secondary shadow-[0_4px_20px_rgba(6,182,212,0.35)] hover:shadow-[0_4px_25px_rgba(6,182,212,0.5)] px-8 py-3.5 rounded-xl font-bold hover:bg-secondary/90 transition-all duration-300 transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
             >
               <BookOpen className="w-5 h-5" /> Đọc ngay
             </button>
             <button
-              onClick={() => onNavigate('detail')}
+              onClick={() => navigate('/stories/' + FEATURED_BOOK.id)}
               className="px-8 py-3.5 rounded-xl font-bold border border-white/10 text-white hover:bg-white/5 hover:border-white/20 transition-all duration-300 transform active:scale-98 cursor-pointer"
             >
               Chi tiết truyện
@@ -145,7 +143,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
               <h2 className="text-2xl font-bold text-white font-display">Mới Cập Nhật</h2>
             </div>
             <button
-              onClick={() => onNavigate('discover')}
+              onClick={() => navigate('/discover')}
               className="text-secondary hover:text-secondary-fixed transition-colors text-sm font-semibold flex items-center gap-1 group cursor-pointer"
             >
               Xem tất cả
@@ -169,7 +167,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
                     <div key={story.id}>
                       <BookCard
                         book={storyToBookCard(story)}
-                        onClick={() => onNavigate('detail', story.id)}
+                        onClick={() => navigate('/stories/' + story.id)}
                       />
                     </div>
                   ))
@@ -225,7 +223,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
                   <li
                     key={story.id}
                     className="flex items-center gap-4 group cursor-pointer p-2.5 rounded-xl hover:bg-surface-container-high/40 border border-transparent hover:border-white/5 transition-all duration-300"
-                    onClick={() => onNavigate('detail', story.id)}
+                    onClick={() => navigate('/stories/' + story.id)}
                   >
                     <div className={`text-xl font-extrabold w-8 h-8 rounded-lg flex items-center justify-center font-display transition-all duration-300 ${index === 0 ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]' :
                         index === 1 ? 'bg-slate-300/10 border border-slate-300/20 text-slate-300' :
@@ -271,7 +269,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
           {['Tiên Hiệp', 'Kiếm Hiệp', 'Huyền Huyễn', 'Ngôn Tình', 'Đô Thị', 'Võng Du'].map((genre, i) => (
             <button
               key={genre}
-              onClick={() => onNavigate('discover')}
+              onClick={() => navigate('/discover')}
               className={`px-6 py-2.5 rounded-xl text-sm font-bold tracking-wide uppercase transition-all duration-300 border cursor-pointer hover:shadow-md transform active:scale-98 ${i % 2 === 0
                   ? 'bg-secondary/5 border-secondary/15 hover:border-secondary/35 text-secondary hover:bg-secondary/10 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)]'
                   : 'bg-primary/5 border-primary/15 hover:border-primary/35 text-primary hover:bg-primary/10 hover:shadow-[0_0_15px_rgba(168,85,247,0.15)]'
