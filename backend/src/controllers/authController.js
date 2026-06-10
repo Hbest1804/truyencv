@@ -4,6 +4,7 @@ import {
   logoutUser,
   refreshUserToken,
 } from '../services/authService.js';
+import { supabase } from '../config/database.js';
 
 /**
  * POST /api/auth/register
@@ -75,6 +76,13 @@ export const login = async (req, res, next) => {
 
     const data = await loginUser(email, password);
 
+    // Lấy thông tin profile thực tế từ DB để trả về đầy đủ cho client
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, display_name, avatar_url, bio, role')
+      .eq('id', data.user.id)
+      .maybeSingle();
+
     return res.status(200).json({
       success: true,
       message: 'Đăng nhập thành công!',
@@ -82,8 +90,11 @@ export const login = async (req, res, next) => {
         user: {
           id: data.user?.id,
           email: data.user?.email,
-          username: data.user?.user_metadata?.username || data.user?.user_metadata?.display_name,
-          avatar_url: data.user?.user_metadata?.avatar_url,
+          username: profile?.username || data.user?.user_metadata?.username,
+          display_name: profile?.display_name || data.user?.user_metadata?.display_name,
+          avatar_url: profile?.avatar_url,
+          bio: profile?.bio,
+          role: profile?.role,
           created_at: data.user?.created_at,
         },
         access_token: data.session?.access_token,
@@ -142,6 +153,13 @@ export const refreshToken = async (req, res, next) => {
 
     const data = await refreshUserToken(refresh_token);
 
+    // Lấy thông tin profile thực tế từ DB để trả về đầy đủ cho client khi refresh token
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, display_name, avatar_url, bio, role')
+      .eq('id', data.user.id)
+      .maybeSingle();
+
     return res.status(200).json({
       success: true,
       message: 'Làm mới token thành công!',
@@ -153,7 +171,11 @@ export const refreshToken = async (req, res, next) => {
         user: {
           id: data.user?.id,
           email: data.user?.email,
-          username: data.user?.user_metadata?.username || data.user?.user_metadata?.display_name,
+          username: profile?.username || data.user?.user_metadata?.username,
+          display_name: profile?.display_name || data.user?.user_metadata?.display_name,
+          avatar_url: profile?.avatar_url,
+          bio: profile?.bio,
+          role: profile?.role,
         },
       },
     });
