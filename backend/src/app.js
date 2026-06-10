@@ -13,8 +13,8 @@ app.use(cors({
 }));
 
 // Cấu hình parsing body dạng JSON và URL-encoded
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Định tuyến API chính
 app.use('/api', routes);

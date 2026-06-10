@@ -7,7 +7,7 @@ import { supabase, supabaseAdmin } from '../config/database.js';
  * @param {string} userEmail
  */
 export const getUserProfile = async (userId, userEmail) => {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('profiles')
     .select('id, username, display_name, avatar_url, bio, role, created_at, updated_at')
     .eq('id', userId)
@@ -33,7 +33,7 @@ export const getUserProfile = async (userId, userEmail) => {
 export const updateUserProfile = async (userId, { username, display_name, bio }) => {
   if (username) {
     // Kiểm tra trùng username
-    const { data: existingUser, error: checkError } = await supabase
+    const { data: existingUser, error: checkError } = await supabaseAdmin
       .from('profiles')
       .select('id')
       .eq('username', username)
@@ -47,7 +47,7 @@ export const updateUserProfile = async (userId, { username, display_name, bio })
     }
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('profiles')
     .update({
       ...(username && { username }),
@@ -153,7 +153,7 @@ export const uploadUserAvatar = async (userId, base64Data) => {
   const avatarUrl = publicUrlData.publicUrl;
 
   // Cập nhật lại cột avatar_url trong bảng profiles
-  const { data, error: updateError } = await supabase
+  const { data, error: updateError } = await supabaseAdmin
     .from('profiles')
     .update({ avatar_url: avatarUrl })
     .eq('id', userId)
@@ -237,7 +237,7 @@ export const changeUserPassword = async (userId, oldPassword, newPassword) => {
 export const getReadingHistory = async (userId, page = 1, limit = 20) => {
   const offset = (page - 1) * limit;
 
-  const { data, error, count } = await supabase
+  const { data, error, count } = await supabaseAdmin
     .from('reading_history')
     .select(`
       id,
@@ -292,7 +292,7 @@ export const getReadingHistory = async (userId, page = 1, limit = 20) => {
 export const getLibrary = async (userId, page = 1, limit = 20) => {
   const offset = (page - 1) * limit;
 
-  const { data, error, count } = await supabase
+  const { data, error, count } = await supabaseAdmin
     .from('bookmarks')
     .select(`
       id,
@@ -350,7 +350,7 @@ export const getLibrary = async (userId, page = 1, limit = 20) => {
 export const getFavorites = async (userId, page = 1, limit = 20) => {
   const offset = (page - 1) * limit;
 
-  const { data, error, count } = await supabase
+  const { data, error, count } = await supabaseAdmin
     .from('favorites')
     .select(`
       id,
@@ -397,7 +397,7 @@ export const getFavorites = async (userId, page = 1, limit = 20) => {
  * @param {string} userId
  */
 export const getPublicProfile = async (userId) => {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('profiles')
     .select('id, username, display_name, avatar_url, bio, role, created_at')
     .eq('id', userId)
