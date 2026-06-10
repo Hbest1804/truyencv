@@ -373,6 +373,32 @@ CREATE OR REPLACE TRIGGER trg_on_auth_user_created
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- -----------------------------------------------
+-- Ngăn chặn thay đổi vai trò (role) hoặc trạng thái bị ban (is_banned) từ phía client
+-- -----------------------------------------------
+CREATE OR REPLACE FUNCTION public.protect_profile_roles()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (NEW.role IS DISTINCT FROM OLD.role OR NEW.is_banned IS DISTINCT FROM OLD.is_banned) THEN
+        -- Chỉ cho phép thay đổi nếu được thực hiện bởi superuser (postgres) hoặc qua service_role (bypassing RLS)
+        IF NOT (
+            current_user = 'postgres' OR
+            current_setting('role', true) IN ('postgres', 'service_role') OR
+            coalesce(current_setting('request.jwt.claims', true)::jsonb ->> 'role', '') = 'service_role' OR
+            auth.role() = 'service_role'
+        ) THEN
+            RAISE EXCEPTION 'Bạn không có quyền thay đổi vai trò (role) hoặc trạng thái bị ban (is_banned)';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_protect_profile_roles ON public.profiles;
+CREATE TRIGGER trg_protect_profile_roles
+    BEFORE UPDATE ON public.profiles
+    FOR EACH ROW EXECUTE FUNCTION public.protect_profile_roles();
+
+-- -----------------------------------------------
 -- Cập nhật chapter_count khi thêm/xoá chương
 -- -----------------------------------------------
 CREATE OR REPLACE FUNCTION public.update_story_chapter_count()
