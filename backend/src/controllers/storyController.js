@@ -298,7 +298,7 @@ export const listChaptersOfStoryHandler = async (req, res, next) => {
     const { storyId } = req.params;
     const { page = 1, limit = 50 } = req.query;
 
-    const safeLimit = Math.max(1, Math.min(Number(limit) || 50, 200));
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 50, 10000));
     const safePage = Math.max(Number(page) || 1, 1);
 
     const result = await getChaptersOfStory(storyId, { page: safePage, limit: safeLimit });

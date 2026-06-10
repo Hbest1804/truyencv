@@ -261,6 +261,7 @@ export function DetailPage() {
   const [commentsList, setCommentsList] = useState(COMMENTS);
   const [newComment, setNewComment] = useState('');
   const [chapterOrderAsc, setChapterOrderAsc] = useState(true);
+  const [chapterPage, setChapterPage] = useState(1);
 
   // Real database chapters
   const [chapters, setChapters] = useState<DbChapter[]>([]);
@@ -269,7 +270,7 @@ export function DetailPage() {
   useEffect(() => {
     if (storyId) {
       setChaptersLoading(true);
-      storyService.getChapters(storyId, { limit: 1000 })
+      storyService.getChapters(storyId, { limit: 10000 })
         .then(res => {
           setChapters(res.chapters);
           setChaptersLoading(false);
@@ -383,9 +384,37 @@ export function DetailPage() {
     }
   };
 
-  const displayedChapters = storyId && chapters.length > 0
-    ? (chapterOrderAsc ? chapters : [...chapters].reverse())
-    : (chapterOrderAsc ? CHAPTERS : [...CHAPTERS].reverse());
+  const chaptersPerPage = 150;
+
+  const rawChapters = storyId && chapters.length > 0
+    ? chapters
+    : CHAPTERS.map((ch, idx) => ({
+        id: ch.id,
+        story_id: 'mock',
+        chapter_number: idx + 1,
+        title: ch.title,
+        content: '',
+        word_count: 0,
+        view_count: 0,
+        is_published: true,
+        is_free: true,
+        created_at: new Date(Date.now() - idx * 24 * 60 * 60 * 1000).toISOString(),
+        published_at: null,
+      } as DbChapter));
+
+  const displayedChapters = chapterOrderAsc ? rawChapters : [...rawChapters].reverse();
+
+  // Reset page when sorting changes or chapters count changes
+  useEffect(() => {
+    setChapterPage(1);
+  }, [chapterOrderAsc, chapters.length]);
+
+  const totalChapterPages = Math.ceil(displayedChapters.length / chaptersPerPage);
+  const paginatedChapters = displayedChapters.slice(
+    (chapterPage - 1) * chaptersPerPage,
+    chapterPage * chaptersPerPage
+  );
+
 
   // ─── Loading State ────────────────────────────────────────────────────────
   if (storyLoading) {
@@ -689,32 +718,83 @@ export function DetailPage() {
               </button>
             </div>
 
-            <div className="flex flex-col gap-3">
-              {displayedChapters.map(ch => (
-                <button
-                  key={ch.id}
-                  onClick={() => navigate(`/stories/${story?.id || storyId}/reader/${ch.id}`)}
-                  className="group p-4 rounded-xl bg-surface-container-low/40 border border-white/5 hover:border-secondary/25 hover:bg-surface-container-high/40 transition-all duration-300 flex items-center justify-between cursor-pointer text-left"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-white group-hover:text-secondary transition-colors duration-250 font-semibold font-display">
-                      {ch.title}
-                    </span>
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase mt-1.5 tracking-wider">
-                      Cập nhật {'updated_at' in ch && ch.updated_at ? new Date(ch.updated_at).toLocaleDateString('vi-VN') : (ch as any).updatedAt || 'Vừa xong'}
-                    </span>
-                  </div>
-                  <div className="w-8 h-8 rounded-lg bg-surface-container/60 group-hover:bg-secondary/15 flex items-center justify-center transition-all">
-                    <ArrowRight className="w-4 h-4 text-on-surface-variant group-hover:text-secondary group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                </button>
-              ))}
+            {chaptersLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 bg-surface-container-low/20 border border-white/5 rounded-2xl">
+                <Loader2 className="w-8 h-8 text-secondary animate-spin" />
+                <p className="text-sm text-on-surface-variant font-medium">Đang tải danh sách chương...</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-3">
+                  {paginatedChapters.map(ch => (
+                    <button
+                      key={ch.id}
+                      onClick={() => navigate(`/stories/${story?.id || storyId}/reader/${ch.id}`)}
+                      className="group p-4 rounded-xl bg-surface-container-low/40 border border-white/5 hover:border-secondary/25 hover:bg-surface-container-high/40 transition-all duration-300 flex items-center justify-between cursor-pointer text-left"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-white group-hover:text-secondary transition-colors duration-250 font-semibold font-display">
+                          {ch.title}
+                        </span>
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase mt-1.5 tracking-wider">
+                          Cập nhật {'updated_at' in ch && ch.updated_at ? new Date(ch.updated_at).toLocaleDateString('vi-VN') : (ch as any).updatedAt || 'Vừa xong'}
+                        </span>
+                      </div>
+                      <div className="w-8 h-8 rounded-lg bg-surface-container/60 group-hover:bg-secondary/15 flex items-center justify-center transition-all">
+                        <ArrowRight className="w-4 h-4 text-on-surface-variant group-hover:text-secondary group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
 
-              <button className="w-full py-4 mt-2 rounded-xl border border-white/5 hover:border-white/10 text-sm font-bold text-on-surface-variant hover:text-white hover:bg-surface-container-high/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                Xem thêm chương
-                <Expand className="w-4 h-4" />
-              </button>
-            </div>
+                {totalChapterPages > 1 && (
+                  <div className="flex flex-wrap items-center justify-center gap-2 mt-8 p-4 bg-surface-container-low/25 border border-white/5 rounded-2xl">
+                    <button
+                      disabled={chapterPage === 1}
+                      onClick={() => setChapterPage(prev => Math.max(1, prev - 1))}
+                      className="px-3 py-2 rounded-xl bg-surface-container-high/40 border border-white/5 text-on-surface-variant hover:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-surface-container-high/80 transition-all text-xs font-bold cursor-pointer active:scale-95"
+                    >
+                      Trước
+                    </button>
+
+                    {Array.from({ length: totalChapterPages }).map((_, idx) => {
+                      const pNum = idx + 1;
+                      const isCurrent = pNum === chapterPage;
+                      
+                      const pageSlice = displayedChapters.slice(idx * chaptersPerPage, (idx + 1) * chaptersPerPage);
+                      if (pageSlice.length === 0) return null;
+                      const firstChapter = pageSlice[0];
+                      const lastChapter = pageSlice[pageSlice.length - 1];
+                      const minNum = Math.min(firstChapter.chapter_number, lastChapter.chapter_number);
+                      const maxNum = Math.max(firstChapter.chapter_number, lastChapter.chapter_number);
+                      const label = `${minNum} - ${maxNum}`;
+
+                      return (
+                        <button
+                          key={pNum}
+                          onClick={() => setChapterPage(pNum)}
+                          className={`px-3.5 py-2 rounded-xl border text-xs font-extrabold transition-all cursor-pointer hover:scale-[1.03] active:scale-97 ${
+                            isCurrent
+                              ? 'bg-secondary/15 border-secondary/35 text-secondary shadow-[0_0_15px_rgba(6,182,212,0.25)]'
+                              : 'bg-surface-container-low/40 border-white/5 text-on-surface-variant hover:text-white hover:bg-surface-container-high/60'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      disabled={chapterPage === totalChapterPages}
+                      onClick={() => setChapterPage(prev => Math.min(totalChapterPages, prev + 1))}
+                      className="px-3 py-2 rounded-xl bg-surface-container-high/40 border border-white/5 text-on-surface-variant hover:text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-surface-container-high/80 transition-all text-xs font-bold cursor-pointer active:scale-95"
+                    >
+                      Sau
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </motion.div>
 
           {/* Comments */}
