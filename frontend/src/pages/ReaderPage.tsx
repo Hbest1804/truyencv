@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useReader } from '@/hooks/useReader';
 import { useStory } from '@/hooks/useStory';
 
-type ReaderTheme = 'warm' | 'light' | 'sepia' | 'nordic' | 'forest';
+type ReaderTheme = 'sepia' | 'warm' | 'light' | 'rose' | 'lavender' | 'mint' | 'dark' | 'nordic' | 'forest' | 'ocean';
 type ReaderFont = 'serif' | 'sans' | 'mono';
 type ReaderSpacing = 'tight' | 'normal' | 'relaxed';
 
@@ -96,20 +96,31 @@ export function ReaderPage() {
   }, [controlsVisible, settingsOpen, chaptersDrawerOpen, saveProgress, markAsRead]);
 
   const themeClasses: Record<ReaderTheme, string> = {
-    warm:   'bg-[#f5f0e8] text-[#2c2017]',
-    light:  'bg-[#ffffff] text-[#18181b]',
-    sepia:  'bg-[#fdf6e3] text-[#4a3728]',
-    nordic: 'bg-[#1e2536] text-[#e2e8f0]',
-    forest: 'bg-[#142920] text-[#d4ebe3]'
+    // ── Sáng ──
+    sepia:    'bg-[#fdf6e3] text-[#4a3728]',
+    warm:     'bg-[#f5f0e8] text-[#2c2017]',
+    light:    'bg-[#f9f9f9] text-[#18181b]',
+    // ── Pastel ──
+    rose:     'bg-[#fff0f3] text-[#5c1a2e]',
+    lavender: 'bg-[#f3f0ff] text-[#3b2f6e]',
+    mint:     'bg-[#edfaf4] text-[#1a4a35]',
+    // ── Tối ──
+    dark:     'bg-[#12141a] text-[#e8eaf0]',
+    nordic:   'bg-[#1e2536] text-[#dde3f0]',
+    forest:   'bg-[#142920] text-[#cce8d8]',
+    ocean:    'bg-[#0b1e2d] text-[#c8e0f0]',
   };
 
-  // Màu overlay bar header/footer theo theme (tránh nền đen cứng)
-  const isDarkTheme = theme === 'nordic' || theme === 'forest';
+  // Màu overlay bar header/footer theo theme
+  const isDarkTheme = theme === 'dark' || theme === 'nordic' || theme === 'forest' || theme === 'ocean';
   const barBg = isDarkTheme
-    ? 'bg-[#0d1117]/90 border-white/8'
-    : 'bg-white/85 border-black/8';
+    ? 'bg-[#0a0c12]/88 border-white/8'
+    : theme === 'rose'     ? 'bg-[#fff0f3]/90 border-rose-200/50'
+    : theme === 'lavender' ? 'bg-[#f3f0ff]/90 border-violet-200/50'
+    : theme === 'mint'     ? 'bg-[#edfaf4]/90 border-emerald-200/50'
+    : 'bg-white/88 border-black/8';
   const barText = isDarkTheme ? 'text-white' : 'text-[#1a1a1a]';
-  const barMuted = isDarkTheme ? 'text-white/50' : 'text-black/45';
+  const barMuted = isDarkTheme ? 'text-white/50' : 'text-black/40';
 
   const fontClasses: Record<ReaderFont, string> = {
     serif: 'font-reading',
@@ -282,24 +293,39 @@ export function ReaderPage() {
               {/* Theme Picker */}
               <div className="space-y-2">
                 <h4 className={`text-[10px] font-bold uppercase tracking-wider ${barMuted}`}>Màu nền trang</h4>
-                <div className="grid grid-cols-5 gap-3">
-                  {(['warm', 'light', 'sepia', 'nordic', 'forest'] as ReaderTheme[]).map(t => {
-                    const active = theme === t;
-                    const labels: Record<ReaderTheme, string> = { warm: 'Kem', light: 'Giấy', sepia: 'Cổ điển', nordic: 'Bắc Âu', forest: 'Rừng thông' };
-                    const circleColors: Record<ReaderTheme, string> = { warm: 'bg-[#f5f0e8]', light: 'bg-[#ffffff]', sepia: 'bg-[#fdf6e3]', nordic: 'bg-[#1e2536]', forest: 'bg-[#142920]' };
-                    const circleBorder: Record<ReaderTheme, string> = { warm: 'border-[#d4c8b8]', light: 'border-[#d4d4d4]', sepia: 'border-[#d4c8a0]', nordic: 'border-white/20', forest: 'border-white/20' };
+                <div className="grid grid-cols-5 gap-2">
+                  {([
+                    // Row 1 – Sáng & Pastel
+                    { id: 'sepia',    label: 'Cổ điển', bg: '#fdf6e3', border: '#c8b87a', dot: '' },
+                    { id: 'warm',     label: 'Kem',      bg: '#f5f0e8', border: '#c4b8a8', dot: '' },
+                    { id: 'light',    label: 'Giấy',     bg: '#f9f9f9', border: '#d4d4d4', dot: '' },
+                    { id: 'rose',     label: 'Hồng',     bg: '#fff0f3', border: '#f4a0b5', dot: '' },
+                    { id: 'lavender', label: 'Oải hương',bg: '#f3f0ff', border: '#bbaef5', dot: '' },
+                    // Row 2 – Xanh & Tối
+                    { id: 'mint',     label: 'Bạc hà',   bg: '#edfaf4', border: '#7ed3a8', dot: '' },
+                    { id: 'dark',     label: 'Đêm',      bg: '#12141a', border: '#3a3f52', dot: '' },
+                    { id: 'nordic',   label: 'Bắc Âu',   bg: '#1e2536', border: '#4a5580', dot: '' },
+                    { id: 'forest',   label: 'Rừng',     bg: '#142920', border: '#2a5a3a', dot: '' },
+                    { id: 'ocean',    label: 'Đại dương', bg: '#0b1e2d', border: '#1a4a6e', dot: '' },
+                  ] as { id: ReaderTheme; label: string; bg: string; border: string; dot: string }[]).map(t => {
+                    const active = theme === t.id;
+                    const isLight = ['sepia','warm','light','rose','lavender','mint'].includes(t.id);
                     return (
                       <button
-                        key={t}
-                        onClick={() => setTheme(t)}
-                        className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all cursor-pointer ${
+                        key={t.id}
+                        onClick={() => setTheme(t.id)}
+                        title={t.label}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer ${
                           active
-                            ? 'border-secondary shadow-[0_0_0_2px_rgba(6,182,212,0.3)]'
-                            : isDarkTheme ? 'border-white/10 hover:border-white/25' : 'border-black/10 hover:border-black/25'
+                            ? 'border-secondary shadow-[0_0_0_2px_rgba(6,182,212,0.35)] scale-105'
+                            : isDarkTheme ? 'border-white/10 hover:border-white/30 hover:scale-105' : 'border-black/10 hover:border-black/25 hover:scale-105'
                         }`}
                       >
-                        <div className={`w-8 h-8 rounded-full border mb-1.5 ${circleColors[t]} ${circleBorder[t]}`} />
-                        <span className={`text-[10px] font-bold mt-0.5 ${barText}`}>{labels[t]}</span>
+                        <div
+                          className="w-8 h-8 rounded-full mb-1.5 shadow-sm"
+                          style={{ background: t.bg, border: `2px solid ${t.border}` }}
+                        />
+                        <span className={`text-[9px] font-bold leading-tight text-center ${isLight ? 'text-black/60' : 'text-white/70'} ${active ? '!text-secondary' : ''}`}>{t.label}</span>
                       </button>
                     );
                   })}
