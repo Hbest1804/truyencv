@@ -1,30 +1,74 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, List, Settings as SettingsIcon, ChevronLeft, ChevronRight, X, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, List, Settings as SettingsIcon, ChevronLeft, ChevronRight, X, Minus, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useReader } from '@/hooks/useReader';
+import { useStory } from '@/hooks/useStory';
 
 type ReaderTheme = 'dark' | 'light' | 'sepia' | 'nordic' | 'forest';
 type ReaderFont = 'serif' | 'sans' | 'mono';
 type ReaderSpacing = 'tight' | 'normal' | 'relaxed';
 
 export function ReaderPage() {
-  const { storyId } = useParams<{ storyId: string }>();
+  const { storyId, chapterId } = useParams<{ storyId: string; chapterId: string }>();
   const navigate = useNavigate();
+  
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [readingProgress, setReadingProgress] = useState(35);
+  const [readingProgress, setReadingProgress] = useState(0);
   const [theme, setTheme] = useState<ReaderTheme>('dark');
   const [font, setFont] = useState<ReaderFont>('serif');
   const [fontSize, setFontSize] = useState(19);
   const [spacing, setSpacing] = useState<ReaderSpacing>('normal');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [chaptersDrawerOpen, setChaptersDrawerOpen] = useState(false);
 
+  // Hook to handle active chapter loading and state management
+  const {
+    chapters,
+    activeChapter,
+    loading,
+    error,
+    goToNextChapter,
+    goToPrevChapter,
+    saveProgress,
+    markAsRead,
+    hasNext,
+    hasPrev,
+    currentChapterNumber,
+    totalChapters,
+  } = useReader(storyId, chapterId);
+
+  // Hook to get the story meta (e.g. title)
+  const { story } = useStory(storyId || null);
+
+  // 1. Restore scroll progress when activeChapter is loaded
+  useEffect(() => {
+    if (activeChapter) {
+      const savedProgress = activeChapter.reading_progress || 0;
+      if (savedProgress > 0 && savedProgress < 99) {
+        const timer = setTimeout(() => {
+          const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+          if (scrollHeight > 0) {
+            const targetY = (savedProgress / 100) * scrollHeight;
+            window.scrollTo({ top: targetY, behavior: 'smooth' });
+          }
+        }, 600); // Wait for content rendering/fonts to layout
+        return () => clearTimeout(timer);
+      } else {
+        window.scrollTo(0, 0);
+        setReadingProgress(0);
+      }
+    }
+  }, [activeChapter?.id]);
+
+  // 2. Handle scroll behaviors
   useEffect(() => {
     let lastScrollY = window.scrollY;
     
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      if (currentScrollY > 50 && currentScrollY > lastScrollY && controlsVisible && !settingsOpen) {
+      if (currentScrollY > 50 && currentScrollY > lastScrollY && controlsVisible && !settingsOpen && !chaptersDrawerOpen) {
         setControlsVisible(false);
       } else if (currentScrollY < lastScrollY && !controlsVisible) {
         setControlsVisible(true);
@@ -34,13 +78,22 @@ export function ReaderPage() {
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (scrollHeight > 0) {
         const scrolled = (currentScrollY / scrollHeight) * 100;
-        setReadingProgress(scrolled);
+        const boundedScrolled = Math.max(0, Math.min(scrolled, 100));
+        setReadingProgress(boundedScrolled);
+        
+        // Debounced save progress
+        saveProgress(boundedScrolled);
+
+        // Mark as read when close to bottom
+        if (boundedScrolled >= 95) {
+          markAsRead();
+        }
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [controlsVisible, settingsOpen]);
+  }, [controlsVisible, settingsOpen, chaptersDrawerOpen, saveProgress, markAsRead]);
 
   const themeClasses: Record<ReaderTheme, string> = {
     dark: 'bg-[#030712] text-[#f8fafc]',
@@ -62,12 +115,41 @@ export function ReaderPage() {
     relaxed: 2.2
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#030712] text-[#f8fafc] flex flex-col items-center justify-center font-ui">
+        <Loader2 className="w-10 h-10 text-secondary animate-spin mb-4" />
+        <p className="text-on-surface-variant text-sm font-semibold">Đang tải nội dung chương...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !activeChapter) {
+    return (
+      <div className="min-h-screen bg-[#030712] text-[#f8fafc] flex flex-col items-center justify-center p-6 text-center font-ui">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-4 opacity-70" />
+        <h2 className="text-xl font-bold text-white mb-2">Lỗi tải chương</h2>
+        <p className="text-on-surface-variant text-sm mb-6 max-w-sm">{error || 'Không tìm thấy nội dung chương'}</p>
+        <button
+          onClick={() => navigate(`/stories/${storyId}`)}
+          className="px-6 py-2.5 bg-primary/10 border border-primary/20 text-primary rounded-xl text-sm font-bold hover:bg-primary/20 transition-all cursor-pointer"
+        >
+          Trở lại chi tiết truyện
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`min-h-screen transition-colors duration-300 ${themeClasses[theme]} ${fontClasses[font]}`}
       onClick={() => {
         if (settingsOpen) {
           setSettingsOpen(false);
+        } else if (chaptersDrawerOpen) {
+          setChaptersDrawerOpen(false);
         } else {
           setControlsVisible(!controlsVisible);
         }
@@ -86,7 +168,7 @@ export function ReaderPage() {
           >
             <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-[1280px] mx-auto font-ui">
               <button
-                onClick={() => navigate('/stories/' + (storyId || 'featured-1'))}
+                onClick={() => navigate(`/stories/${storyId}`)}
                 className="flex items-center gap-2 text-on-surface-variant hover:text-secondary transition-colors cursor-pointer group"
               >
                 <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1 text-white" />
@@ -94,16 +176,19 @@ export function ReaderPage() {
               </button>
               
               <div className="flex flex-col items-center text-center max-w-[200px] md:max-w-md">
-                <h1 className="font-bold text-white truncate text-sm md:text-base font-display">
-                  Chương 4: Tiếng vọng từ hư vô
+                <h1 className="font-bold text-white truncate text-xs md:text-base font-display">
+                  Chương {activeChapter.chapter_number}: {activeChapter.title}
                 </h1>
                 <span className="text-[9px] font-bold tracking-wider text-on-surface-variant uppercase mt-0.5">
-                  Đại Đạo Tranh Phong
+                  {story?.title || 'Đang tải truyện...'}
                 </span>
               </div>
               
               <div className="flex items-center gap-2.5">
-                <button className="text-on-surface-variant hover:text-secondary transition-colors p-2 rounded-full hover:bg-white/5 cursor-pointer">
+                <button
+                  onClick={() => setChaptersDrawerOpen(!chaptersDrawerOpen)}
+                  className={`text-on-surface-variant hover:text-secondary transition-colors p-2 rounded-full hover:bg-white/5 cursor-pointer ${chaptersDrawerOpen ? 'text-secondary bg-white/5' : ''}`}
+                >
                   <List className="w-5 h-5 text-white" />
                 </button>
                 <button
@@ -137,40 +222,15 @@ export function ReaderPage() {
           style={{ fontSize: `${fontSize}px`, lineHeight: lineHeights[spacing] }}
         >
           <h2 className="text-3xl md:text-4.5xl font-black mb-10 font-display text-white border-b border-white/5 pb-6">
-            4. Tiếng vọng từ hư vô
+            Chương {activeChapter.chapter_number}: {activeChapter.title}
           </h2>
           
           <div className="space-y-8 font-medium">
-            <p>
-              Thư viện rộng lớn vô cùng, một kỳ quan kiến trúc làm bằng gỗ gụ thẫm màu và hắc thạch bóng loáng. Những hạt bụi nhảy múa lười biếng trong các luồng ánh sáng nhạt nhòa lọt qua những ô cửa sổ cao hình vòm. Nói nơi đây yên tĩnh thì quả là chưa đủ; sự im lặng ở đây có một sức nặng vật chất, đè nén lên màng nhĩ như độ sâu của đại dương mênh mông.
-            </p>
-            <p>
-              Elias lướt nhẹ một ngón tay dọc theo gáy của một cuốn sách bọc da cổ kính, cảm nhận những chữ dập nổi đã bị bào mòn mịn màng qua hàng thế kỷ tôn kính. Đây không phải là nơi để duyệt qua một cách tình cờ. Mỗi tập sách được lưu giữ ở đây không chỉ chứa đựng các bản vẽ thiết kế cho các tòa nhà, mà còn cho cả chính thực tại.
-            </p>
-            <p>
-              Anh dừng lại, bàn tay lơ lửng trên một cuốn sách đặc biệt không có gì nổi bật được bọc trong vải bạt màu xám phiến thạch. Tựa đề, được đóng dấu nhạt bằng bạc, ghi: <em className="text-secondary font-bold">Tính Toàn Vẹn Cấu Trúc Của Hư Vô</em>.
-            </p>
-            
-            <blockquote className="border-l-4 border-secondary/50 pl-6 my-10 italic opacity-85 p-5 rounded-r-2xl bg-black/20 font-ui text-base leading-relaxed">
-              "Xây dựng trong hư không đòi hỏi nhiều hơn là vật chất thô sơ. Nó đòi hỏi một niềm tin tuyệt đối rằng sự trống rỗng thèm khát hình thể. Người ta phải lắng nghe khoảng không tiêu cực trước khi cố gắng lấp đầy nó."
-            </blockquote>
-            
-            <p>
-              Khi anh mở cuốn sách ra, những trang giấy không sột soạt; chúng như thể đang thở dài nhẹ nhõm. Các sơ đồ bên trong liên tục chuyển động, những điều không thể về mặt hình học xoắn vặn mắt và làm căng thẳng tâm trí người đọc.
-            </p>
-            <p>
-              Đột nhiên, một tiếng chuông mềm mại vang vọng khắp các giá sách dài vô tận. Đó là âm thanh sắc bén, rõ ràng của thủy tinh bị rạn nứt dưới một áp lực khổng lồ.
-            </p>
-            
-            <div className="flex justify-center my-14 opacity-40">
-              <span className="w-2 h-2 rounded-full bg-current mx-2.5"></span>
-              <span className="w-2 h-2 rounded-full bg-current mx-2.5"></span>
-              <span className="w-2 h-2 rounded-full bg-current mx-2.5"></span>
-            </div>
-            
-            <p>
-              Anh cẩn thận đóng cuốn sách lại, đảm bảo chiếc khóa tinh xảo đã được bảo mật. Sự im lặng ùa trở lại, nhưng giờ đây nó đã thay đổi. Sức nặng của nó đã biến mất, được thay thế bằng một sự chờ đợi căng thẳng tột độ.
-            </p>
+            {activeChapter.content.split('\n').map((para, idx) => {
+              const cleanPara = para.trim();
+              if (!cleanPara) return null;
+              return <p key={idx}>{cleanPara}</p>;
+            })}
           </div>
         </article>
       </main>
@@ -292,6 +352,63 @@ export function ReaderPage() {
         )}
       </AnimatePresence>
 
+      {/* Chapters List Sidebar Drawer */}
+      <AnimatePresence>
+        {chaptersDrawerOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setChaptersDrawerOpen(false)}
+              className="fixed inset-0 bg-black z-[60]"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+              className="fixed left-0 top-0 bottom-0 w-[300px] bg-surface-container border-r border-white/10 z-[70] p-6 flex flex-col justify-between font-ui"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex flex-col h-full">
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/5">
+                  <span className="font-display font-extrabold text-white text-base">Mục lục chương</span>
+                  <button
+                    onClick={() => setChaptersDrawerOpen(false)}
+                    className="text-on-surface-variant hover:text-white p-2 rounded-full hover:bg-white/5 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
+                  {chapters.map((ch) => {
+                    const isActive = ch.id === activeChapter.id;
+                    return (
+                      <button
+                        key={ch.id}
+                        onClick={() => {
+                          navigate(`/stories/${storyId}/reader/${ch.id}`);
+                          setChaptersDrawerOpen(false);
+                        }}
+                        className={`w-full text-left p-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-secondary/15 border-secondary/35 text-secondary shadow-sm'
+                            : 'bg-surface-container-high/40 border-white/5 text-on-surface-variant hover:text-white hover:bg-surface-container-high/60'
+                        }`}
+                      >
+                        Chương {ch.chapter_number}: {ch.title}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Bottom Navigation & Controls */}
       <AnimatePresence>
         {controlsVisible && (
@@ -309,17 +426,25 @@ export function ReaderPage() {
                   Tiến độ: <span className="font-bold text-white">{Math.round(readingProgress)}%</span>
                 </div>
                 <div className="font-bold uppercase text-[10px] tracking-wider">
-                  Chương 4 / 24
+                  Chương {currentChapterNumber} / {totalChapters}
                 </div>
               </div>
               
               <div className="flex justify-between items-center">
-                <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl hover:bg-white/5 text-white transition-colors group text-sm font-semibold cursor-pointer">
+                <button
+                  disabled={!hasPrev}
+                  onClick={goToPrevChapter}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl hover:bg-white/5 text-white transition-colors group text-sm font-semibold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                >
                   <ChevronLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
                   Chương trước
                 </button>
                 
-                <button className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/90 text-on-secondary shadow-[0_4px_15px_rgba(6,182,212,0.25)] transition-all group text-sm font-bold cursor-pointer">
+                <button
+                  disabled={!hasNext}
+                  onClick={goToNextChapter}
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/90 text-on-secondary shadow-[0_4px_15px_rgba(6,182,212,0.25)] transition-all group text-sm font-bold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                >
                   Chương tiếp
                   <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
                 </button>
@@ -331,3 +456,4 @@ export function ReaderPage() {
     </div>
   );
 }
+

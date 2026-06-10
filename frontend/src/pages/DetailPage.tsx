@@ -5,11 +5,12 @@ import {
   AlertCircle, Copy, Facebook, Twitter, X
 } from 'lucide-react';
 import { CHAPTERS, COMMENTS } from '@/constants/mockData';
-import { ReportReason } from '@/types';
+import { ReportReason, DbChapter } from '@/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStory } from '@/hooks/useStory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
+import { storyService } from '@/services/storyService';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -261,6 +262,25 @@ export function DetailPage() {
   const [newComment, setNewComment] = useState('');
   const [chapterOrderAsc, setChapterOrderAsc] = useState(true);
 
+  // Real database chapters
+  const [chapters, setChapters] = useState<DbChapter[]>([]);
+  const [chaptersLoading, setChaptersLoading] = useState(false);
+
+  useEffect(() => {
+    if (storyId) {
+      setChaptersLoading(true);
+      storyService.getChapters(storyId, { limit: 1000 })
+        .then(res => {
+          setChapters(res.chapters);
+          setChaptersLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to load chapters:", err);
+          setChaptersLoading(false);
+        });
+    }
+  }, [storyId]);
+
   // Rating UI
   const [ratingScore, setRatingScore] = useState(0);
   const [ratingReview, setRatingReview] = useState('');
@@ -363,7 +383,9 @@ export function DetailPage() {
     }
   };
 
-  const displayedChapters = chapterOrderAsc ? CHAPTERS : [...CHAPTERS].reverse();
+  const displayedChapters = storyId && chapters.length > 0
+    ? (chapterOrderAsc ? chapters : [...chapters].reverse())
+    : (chapterOrderAsc ? CHAPTERS : [...CHAPTERS].reverse());
 
   // ─── Loading State ────────────────────────────────────────────────────────
   if (storyLoading) {
@@ -671,7 +693,7 @@ export function DetailPage() {
               {displayedChapters.map(ch => (
                 <button
                   key={ch.id}
-                  onClick={() => navigate(`/stories/${story?.id || storyId}/reader`)}
+                  onClick={() => navigate(`/stories/${story?.id || storyId}/reader/${ch.id}`)}
                   className="group p-4 rounded-xl bg-surface-container-low/40 border border-white/5 hover:border-secondary/25 hover:bg-surface-container-high/40 transition-all duration-300 flex items-center justify-between cursor-pointer text-left"
                 >
                   <div className="flex flex-col">
@@ -679,7 +701,7 @@ export function DetailPage() {
                       {ch.title}
                     </span>
                     <span className="text-[10px] font-bold text-on-surface-variant uppercase mt-1.5 tracking-wider">
-                      Cập nhật {ch.updatedAt}
+                      Cập nhật {'updated_at' in ch && ch.updated_at ? new Date(ch.updated_at).toLocaleDateString('vi-VN') : (ch as any).updatedAt || 'Vừa xong'}
                     </span>
                   </div>
                   <div className="w-8 h-8 rounded-lg bg-surface-container/60 group-hover:bg-secondary/15 flex items-center justify-center transition-all">

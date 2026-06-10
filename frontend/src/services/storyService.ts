@@ -1,4 +1,4 @@
-import { Story, StoriesListResult, ShareData, RatingData, ReportReason } from '@/types';
+import { Story, StoriesListResult, ShareData, RatingData, ReportReason, DbChapter } from '@/types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -211,5 +211,65 @@ export const storyService = {
       body: JSON.stringify({ platform }),
     });
     return res.data!;
+  },
+
+  /**
+   * GET /api/stories/:storyId/chapters
+   * Danh sách chương của một truyện
+   */
+  async getChapters(
+    storyId: string,
+    params: { page?: number; limit?: number } = {}
+  ): Promise<{ chapters: DbChapter[]; pagination: Omit<StoriesListResult, 'stories'> }> {
+    const qs = buildQuery(params);
+    const res = await apiFetch<DbChapter[]>(`/stories/${storyId}/chapters${qs}`);
+    return {
+      chapters: res.data || [],
+      pagination: {
+        total: res.pagination?.total || 0,
+        page: res.pagination?.page || 1,
+        limit: res.pagination?.limit || 50,
+        totalPages: res.pagination?.totalPages || 0,
+      },
+    };
+  },
+
+  /**
+   * GET /api/stories/:storyId/chapters/:chapterId
+   * Nội dung một chương
+   */
+  async getChapter(storyId: string, chapterId: string): Promise<DbChapter> {
+    const res = await apiFetch<DbChapter>(`/stories/${storyId}/chapters/${chapterId}`);
+    if (!res.data) throw new Error('Không tìm thấy nội dung chương');
+    return res.data;
+  },
+
+  /**
+   * POST /api/stories/:storyId/chapters/:chapterId/progress
+   * Lưu vị trí đọc
+   */
+  async saveProgress(storyId: string, chapterId: string, progress: number): Promise<void> {
+    await apiFetch(
+      `/stories/${storyId}/chapters/${chapterId}/progress`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ progress }),
+      },
+      true
+    );
+  },
+
+  /**
+   * POST /api/stories/:storyId/chapters/:chapterId/mark-read
+   * Đánh dấu đã đọc
+   */
+  async markRead(storyId: string, chapterId: string): Promise<void> {
+    await apiFetch(
+      `/stories/${storyId}/chapters/${chapterId}/mark-read`,
+      {
+        method: 'POST',
+      },
+      true
+    );
   },
 };
