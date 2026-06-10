@@ -1,1 +1,1 @@
-export { AuthModal } from './AuthModal';
+// Legacy AuthModal removed. Auth flow migrated to standalone pages.

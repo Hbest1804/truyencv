@@ -3,9 +3,6 @@ import { Bell, Search, Settings, Menu, X, Home, Compass, Bookmark, MessageSquare
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/hooks/useAuth';
-import { AuthModal } from '@/components/auth/AuthModal';
-
-type AuthModalTab = 'login' | 'register';
 
 export function Header() {
   const { isAuthenticated, user, logout, isLoading } = useAuth();
@@ -14,8 +11,6 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState<AuthModalTab>('login');
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -39,11 +34,6 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const openAuthModal = (tab: AuthModalTab) => {
-    setAuthModalTab(tab);
-    setAuthModalOpen(true);
-    setMobileMenuOpen(false);
-  };
 
   const handleLogout = async () => {
     setUserDropdownOpen(false);
@@ -223,24 +213,24 @@ export function Header() {
               </>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
-                <button
+                <Link
                   id="header-login-btn"
-                  onClick={() => openAuthModal('login')}
-                  className="px-4 py-1.5 rounded-full text-sm font-semibold text-on-surface-variant hover:text-white border border-white/10 hover:border-white/20 transition-all hover:bg-white/5"
+                  to="/login"
+                  className="px-4 py-1.5 rounded-full text-sm font-semibold text-on-surface-variant hover:text-white border border-white/10 hover:border-white/20 transition-all hover:bg-white/5 text-center flex items-center justify-center"
                 >
                   Đăng nhập
-                </button>
-                <button
+                </Link>
+                <Link
                   id="header-register-btn"
-                  onClick={() => openAuthModal('register')}
-                  className="px-4 py-1.5 rounded-full text-sm font-semibold text-white transition-all"
+                  to="/register"
+                  className="px-4 py-1.5 rounded-full text-sm font-semibold text-white transition-all text-center flex items-center justify-center"
                   style={{
                     background: 'linear-gradient(135deg, #a855f7 0%, #06b6d4 100%)',
                     boxShadow: '0 0 14px rgba(168,85,247,0.3)',
                   }}
                 >
                   Đăng ký
-                </button>
+                </Link>
               </div>
             )}
 
@@ -356,19 +346,21 @@ export function Header() {
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => openAuthModal('login')}
-                    className="flex-1 py-2 px-3 rounded-lg border border-white/10 text-on-surface-variant hover:text-white text-xs font-semibold transition-colors"
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 py-2 px-3 rounded-lg border border-white/10 text-on-surface-variant hover:text-white text-xs font-semibold transition-colors text-center"
                   >
                     Đăng nhập
-                  </button>
-                  <button
-                    onClick={() => openAuthModal('register')}
-                    className="flex-1 py-2 px-3 rounded-lg text-white text-xs font-semibold transition-colors"
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 py-2 px-3 rounded-lg text-white text-xs font-semibold transition-colors text-center"
                     style={{ background: 'linear-gradient(135deg, #a855f7, #06b6d4)' }}
                   >
                     Đăng ký
-                  </button>
+                  </Link>
                 </div>
               )}
             </motion.div>
@@ -376,11 +368,6 @@ export function Header() {
         )}
       </AnimatePresence>
 
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        initialTab={authModalTab}
-      />
     </>
   );
 }
