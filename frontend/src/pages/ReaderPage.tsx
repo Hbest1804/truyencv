@@ -94,16 +94,11 @@ export function ReaderPage() {
     ocean:    'bg-[#0b1e2d] text-[#c8e0f0]',
   };
 
-  // Màu overlay bar header/footer theo theme
-  const isDarkTheme = theme === 'dark' || theme === 'nordic' || theme === 'forest' || theme === 'ocean';
-  const barBg = isDarkTheme
-    ? 'bg-[#0a0c12]/88 border-white/8'
-    : theme === 'rose'     ? 'bg-[#fff0f3]/90 border-rose-200/50'
-    : theme === 'lavender' ? 'bg-[#f3f0ff]/90 border-violet-200/50'
-    : theme === 'mint'     ? 'bg-[#edfaf4]/90 border-emerald-200/50'
-    : 'bg-white/88 border-black/8';
-  const barText = isDarkTheme ? 'text-white' : 'text-[#1a1a1a]';
-  const barMuted = isDarkTheme ? 'text-white/50' : 'text-black/40';
+  // Header/footer dùng glass-panel tối giống Home page — không phụ thuộc vào theme đọc
+  const barBg = 'bg-[#0b0f19]/80 backdrop-blur-2xl border-white/5';
+  const barText = 'text-white';
+  const barMuted = 'text-white/50';
+  const isDarkTheme = true; // bars luôn tối — dùng cho logic nội bộ drawer
 
   const fontClasses: Record<ReaderFont, string> = {
     serif: 'font-reading',
@@ -152,9 +147,9 @@ export function ReaderPage() {
         else if (chaptersDrawerOpen) setChaptersDrawerOpen(false);
       }}
     >
-      {/* Top Reader Control Bar — always visible */}
+      {/* Top Reader Control Bar — always visible, dark glass like Home */}
       <header
-        className={`fixed top-0 w-full z-50 backdrop-blur-md border-b shadow-sm ${barBg}`}
+        className="fixed top-0 w-full z-50 bg-[#0b0f19]/80 backdrop-blur-2xl border-b border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-between items-center h-14 px-4 md:px-8 max-w-[1280px] mx-auto font-ui">
@@ -192,9 +187,9 @@ export function ReaderPage() {
         </div>
 
         {/* Reading Progress Bar — dưới header */}
-        <div className={`w-full h-[3px] ${isDarkTheme ? 'bg-white/8' : 'bg-black/8'}`}>
+        <div className="w-full h-[3px] bg-white/8">
           <div
-            className="h-full bg-secondary transition-all duration-150 ease-out shadow-[0_0_6px_rgba(6,182,212,0.5)]"
+            className="h-full bg-secondary transition-all duration-150 ease-out shadow-[0_0_6px_rgba(6,182,212,0.6)]"
             style={{ width: `${readingProgress}%` }}
           />
         </div>
@@ -240,7 +235,7 @@ export function ReaderPage() {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className={`fixed bottom-0 left-0 w-full z-[80] backdrop-blur-xl border-t p-6 md:p-8 rounded-t-3xl shadow-2xl font-ui ${barBg}`}
+            className="fixed bottom-0 left-0 w-full z-[80] bg-[#0b0f19]/95 backdrop-blur-2xl border-t border-white/5 p-6 md:p-8 rounded-t-3xl shadow-[0_-8px_32px_rgba(0,0,0,0.5)] font-ui"
             onClick={e => e.stopPropagation()}
           >
             <div className="max-w-[640px] mx-auto space-y-6">
@@ -428,9 +423,9 @@ export function ReaderPage() {
         )}
       </AnimatePresence>
 
-      {/* Bottom Navigation & Controls — always visible */}
+      {/* Bottom Navigation & Controls — always visible, dark glass like Home */}
       <footer
-        className={`fixed bottom-0 w-full z-50 backdrop-blur-md border-t shadow-lg font-ui ${barBg}`}
+        className="fixed bottom-0 w-full z-50 bg-[#0b0f19]/80 backdrop-blur-2xl border-t border-white/5 shadow-[0_-8px_32px_rgba(0,0,0,0.4)] font-ui"
         onClick={e => e.stopPropagation()}
       >
         <div className="max-w-[720px] mx-auto px-4 md:px-0 py-3">
