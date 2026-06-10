@@ -331,21 +331,72 @@ END $$;
 -- -----------------------------------------------
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    v_username VARCHAR(50);
+    v_display_name VARCHAR(100);
 BEGIN
-    INSERT INTO public.profiles (id, username, display_name, avatar_url)
-    VALUES (
-        NEW.id,
-        COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
-        COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1)),
-        NEW.raw_user_meta_data->>'avatar_url'
-    );
+    v_username := COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1), 'user_' || substr(NEW.id::text, 1, 8));
+    v_display_name := COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1), 'User ' || substr(NEW.id::text, 1, 8));
+
+    -- Truncate to fit VARCHAR limits
+    v_username := substring(v_username from 1 for 50);
+    v_display_name := substring(v_display_name from 1 for 100);
+
+    BEGIN
+        INSERT INTO public.profiles (id, username, display_name, avatar_url, role)
+        VALUES (
+            NEW.id,
+            v_username,
+            v_display_name,
+            NEW.raw_user_meta_data->>'avatar_url',
+            'reader'
+        );
+    EXCEPTION WHEN unique_violation THEN
+        -- Fallback to a guaranteed unique username using UUID
+        v_username := 'user_' || substr(NEW.id::text, 1, 8);
+        INSERT INTO public.profiles (id, username, display_name, avatar_url, role)
+        VALUES (
+            NEW.id,
+            v_username,
+            v_display_name,
+            NEW.raw_user_meta_data->>'avatar_url',
+            'reader'
+        );
+    END;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+
 CREATE OR REPLACE TRIGGER trg_on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- -----------------------------------------------
+-- Ngăn chặn thay đổi vai trò (role) hoặc trạng thái bị ban (is_banned) từ phía client
+-- -----------------------------------------------
+CREATE OR REPLACE FUNCTION public.protect_profile_roles()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (NEW.role IS DISTINCT FROM OLD.role OR NEW.is_banned IS DISTINCT FROM OLD.is_banned) THEN
+        -- Chỉ cho phép thay đổi nếu được thực hiện bởi superuser (postgres) hoặc qua service_role (bypassing RLS)
+        IF NOT (
+            current_user = 'postgres' OR
+            current_setting('role', true) IN ('postgres', 'service_role') OR
+            coalesce(current_setting('request.jwt.claims', true)::jsonb ->> 'role', '') = 'service_role' OR
+            auth.role() = 'service_role'
+        ) THEN
+            RAISE EXCEPTION 'Bạn không có quyền thay đổi vai trò (role) hoặc trạng thái bị ban (is_banned)';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_protect_profile_roles ON public.profiles;
+CREATE TRIGGER trg_protect_profile_roles
+    BEFORE UPDATE ON public.profiles
+    FOR EACH ROW EXECUTE FUNCTION public.protect_profile_roles();
 
 -- -----------------------------------------------
 -- Cập nhật chapter_count khi thêm/xoá chương

@@ -1,4 +1,4 @@
-export type ViewState = 'home' | 'discover' | 'detail' | 'reader';
+export type ViewState = 'home' | 'discover' | 'detail' | 'reader' | 'profile';
 
 export interface Book {
   id: string;
@@ -31,7 +31,10 @@ export interface User {
   id: string;
   email: string;
   username?: string;
+  display_name?: string;
   avatar_url?: string;
+  bio?: string;
+  role?: string;
   created_at?: string;
 }
 
@@ -48,6 +51,7 @@ export interface AuthContextType extends AuthState {
   register: (email: string, password: string, username?: string) => Promise<{ needsEmailConfirmation: boolean; message: string }>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
+  updateUser: (user: Partial<User>) => void;
 }
 
 // ─── Story API Types (mapping from backend v_story_detail) ───────────────────

@@ -186,7 +186,13 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
                           <p className="text-on-surface-variant text-xs truncate mt-0.5">{user.email}</p>
                         </div>
                         <div className="p-1.5">
-                          <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:text-white hover:bg-white/5 transition-all text-left">
+                          <button
+                            onClick={() => {
+                              onNavigate('profile');
+                              setUserDropdownOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
+                          >
                             <UserCircle className="w-4 h-4" /> Hồ sơ của tôi
                           </button>
                           <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:text-white hover:bg-white/5 transition-all text-left">
@@ -270,7 +276,15 @@ export function Header({ currentView, onNavigate }: HeaderProps) {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-surface-container-high/40 rounded-xl mb-6">
+                <div
+                  onClick={() => {
+                    if (isAuthenticated) {
+                      onNavigate('profile');
+                      setMobileMenuOpen(false);
+                    }
+                  }}
+                  className={`flex items-center gap-3 p-3 bg-surface-container-high/40 rounded-xl mb-6 ${isAuthenticated ? 'cursor-pointer hover:bg-surface-container-high transition-all' : ''}`}
+                >
                   <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden flex items-center justify-center bg-gradient-to-br from-primary/30 to-secondary/30">
                     {isAuthenticated && user?.avatar_url ? (
                       <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover" />

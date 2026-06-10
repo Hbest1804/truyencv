@@ -162,12 +162,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const updateUser = useCallback((updatedFields: Partial<User>) => {
+    setState(prev => {
+      if (!prev.user) return prev;
+      const newUser = { ...prev.user, ...updatedFields };
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
+      return { ...prev, user: newUser };
+    });
+  }, []);
+
   const value: AuthContextType = {
     ...state,
     login,
     register,
     logout,
     refreshAccessToken,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -8,12 +8,7 @@ dotenv.config();
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, async () => {
-  console.log(`=========================================`);
   console.log(` Server backend is running on port: ${PORT}`);
-  console.log(` Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(` API Endpoint: http://localhost:${PORT}/api`);
-  console.log(` Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`=========================================`);
 
   // Tự động tạo tài khoản Admin nếu chưa tồn tại
   await seedAdminAccount();
