@@ -43,6 +43,13 @@ export const getUserProfile = async (userId, userEmail) => {
 export const updateUserProfile = async (userId, { username, display_name, bio }) => {
   checkAdminClient();
   if (username) {
+    const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
+    if (!usernameRegex.test(username)) {
+      const err = new Error('Tên đăng nhập chỉ được chứa chữ cái, số, dấu gạch dưới và từ 3 đến 30 ký tự');
+      err.statusCode = 400;
+      throw err;
+    }
+
     // Kiểm tra trùng username
     const { data: existingUser, error: checkError } = await supabaseAdmin
       .from('profiles')
@@ -108,9 +115,17 @@ export const uploadUserAvatar = async (userId, base64Data) => {
     throw err;
   }
 
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
   if (matches && matches.length === 3) {
     mimeType = matches[1];
+    if (!allowedMimeTypes.includes(mimeType)) {
+      const err = new Error('Chỉ chấp nhận các định dạng ảnh: jpeg, png, gif, webp');
+      err.statusCode = 400;
+      throw err;
+    }
     extension = mimeType.split('/')[1] || 'jpg';
+    if (extension === 'jpeg') extension = 'jpg';
     buffer = Buffer.from(matches[2], 'base64');
   } else {
     // Dự phòng khi chỉ gửi chuỗi base64 thô
@@ -125,6 +140,17 @@ export const uploadUserAvatar = async (userId, base64Data) => {
   }
 
   checkAdminClient();
+
+  // Xóa ảnh đại diện cũ (nếu có) để tránh tích lũy file rác trong Storage
+  try {
+    const { data: existingFiles } = await supabaseAdmin.storage.from('avatars').list(userId);
+    if (existingFiles && existingFiles.length > 0) {
+      const filesToDelete = existingFiles.map((file) => `${userId}/${file.name}`);
+      await supabaseAdmin.storage.from('avatars').remove(filesToDelete);
+    }
+  } catch (storageErr) {
+    console.warn('[Storage Cleanup Warning] Không thể dọn dẹp avatar cũ:', storageErr.message);
+  }
 
   // Đường dẫn lưu file
   const filename = `${userId}/avatar_${Date.now()}.${extension}`;

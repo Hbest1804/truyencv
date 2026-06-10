@@ -118,10 +118,12 @@ export const changePassword = async (req, res, next) => {
  */
 export const getReadingHistory = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const { page = 1, limit = 20 } = req.query;
+    let pageNum = parseInt(req.query.page, 10);
+    let limitNum = parseInt(req.query.limit, 10);
+    if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
+    if (isNaN(limitNum) || limitNum < 1) limitNum = 20;
 
-    const result = await getReadingHistoryService(userId, Number(page), Number(limit));
+    const result = await getReadingHistoryService(userId, pageNum, limitNum);
 
     return res.status(200).json({
       success: true,
@@ -144,10 +146,12 @@ export const getReadingHistory = async (req, res, next) => {
  */
 export const getLibrary = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const { page = 1, limit = 20 } = req.query;
+    let pageNum = parseInt(req.query.page, 10);
+    let limitNum = parseInt(req.query.limit, 10);
+    if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
+    if (isNaN(limitNum) || limitNum < 1) limitNum = 20;
 
-    const result = await getLibraryService(userId, Number(page), Number(limit));
+    const result = await getLibraryService(userId, pageNum, limitNum);
 
     return res.status(200).json({
       success: true,
@@ -170,10 +174,12 @@ export const getLibrary = async (req, res, next) => {
  */
 export const getFavorites = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const { page = 1, limit = 20 } = req.query;
+    let pageNum = parseInt(req.query.page, 10);
+    let limitNum = parseInt(req.query.limit, 10);
+    if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
+    if (isNaN(limitNum) || limitNum < 1) limitNum = 20;
 
-    const result = await getFavoritesService(userId, Number(page), Number(limit));
+    const result = await getFavoritesService(userId, pageNum, limitNum);
 
     return res.status(200).json({
       success: true,
@@ -196,11 +202,13 @@ export const getFavorites = async (req, res, next) => {
  */
 export const getFollowing = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const { page = 1, limit = 20 } = req.query;
+    let pageNum = parseInt(req.query.page, 10);
+    let limitNum = parseInt(req.query.limit, 10);
+    if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
+    if (isNaN(limitNum) || limitNum < 1) limitNum = 20;
 
     // Sử dụng chung service với library (bookmarks)
-    const result = await getLibraryService(userId, Number(page), Number(limit));
+    const result = await getLibraryService(userId, pageNum, limitNum);
 
     return res.status(200).json({
       success: true,
