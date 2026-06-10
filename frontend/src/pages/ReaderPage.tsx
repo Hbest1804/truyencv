@@ -96,11 +96,11 @@ export function ReaderPage() {
   }, [controlsVisible, settingsOpen, chaptersDrawerOpen, saveProgress, markAsRead]);
 
   const themeClasses: Record<ReaderTheme, string> = {
-    dark: 'bg-[#030712] text-[#f8fafc]',
-    light: 'bg-[#f8fafc] text-[#0f172a]',
-    sepia: 'bg-[#f4ecd8] text-[#5b4636]',
-    nordic: 'bg-[#0f172a] text-[#e2e8f0]',
-    forest: 'bg-[#0d2219] text-[#e1ece8]'
+    dark: 'bg-[#0e1118] text-[#f1f5f9]',
+    light: 'bg-[#ffffff] text-[#18181b]',
+    sepia: 'bg-[#fdf6e3] text-[#5c4738]',
+    nordic: 'bg-[#1e2536] text-[#e2e8f0]',
+    forest: 'bg-[#142920] text-[#e1ece8]'
   };
 
   const fontClasses: Record<ReaderFont, string> = {
@@ -221,16 +221,21 @@ export function ReaderPage() {
           className="max-w-none text-current"
           style={{ fontSize: `${fontSize}px`, lineHeight: lineHeights[spacing] }}
         >
-          <h2 className="text-3xl md:text-4.5xl font-black mb-10 font-display text-white border-b border-white/5 pb-6">
+          <h2 className="text-3xl md:text-4.5xl font-black mb-10 font-display text-current opacity-95 border-b border-current/10 pb-6">
             Chương {activeChapter.chapter_number}: {activeChapter.title}
           </h2>
           
           <div className="space-y-8 font-medium">
-            {activeChapter.content.split('\n').map((para, idx) => {
-              const cleanPara = para.trim();
-              if (!cleanPara) return null;
-              return <p key={idx}>{cleanPara}</p>;
-            })}
+            {(activeChapter.content || '')
+              .replace(/<br\s*\/?>/gi, '\n')
+              .replace(/\\n/g, '\n')
+              .replace(/\r/g, '\n')
+              .split('\n')
+              .map((para, idx) => {
+                const cleanPara = para.trim();
+                if (!cleanPara) return null;
+                return <p key={idx}>{cleanPara}</p>;
+              })}
           </div>
         </article>
       </main>
@@ -266,7 +271,7 @@ export function ReaderPage() {
                   {(['dark', 'light', 'sepia', 'nordic', 'forest'] as ReaderTheme[]).map(t => {
                     const active = theme === t;
                     const labels = { dark: 'Obsidian', light: 'Giấy', sepia: 'Cổ điển', nordic: 'Bắc Âu', forest: 'Rừng thông' };
-                    const circleColors = { dark: 'bg-[#030712]', light: 'bg-[#f8fafc]', sepia: 'bg-[#f4ecd8]', nordic: 'bg-[#0f172a]', forest: 'bg-[#0d2219]' };
+                    const circleColors = { dark: 'bg-[#0e1118]', light: 'bg-[#ffffff]', sepia: 'bg-[#fdf6e3]', nordic: 'bg-[#1e2536]', forest: 'bg-[#142920]' };
                     return (
                       <button
                         key={t}
