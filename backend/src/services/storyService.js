@@ -685,31 +685,14 @@ export const getChapterContent = async (storyId, chapterId, userId = null) => {
     throw err;
   }
 
-  // Tăng lượt xem (view_count)
+  // Tăng lượt xem qua story_views — view_count chapters/stories được cập nhật tự động bằng DB Trigger
+  // (atomic, không có race condition khi nhiều user đọc đồng thời)
   try {
     await supabase.from('story_views').insert({
       story_id: storyId,
       user_id: userId,
       chapter_id: chapterId,
     });
-
-    await supabase
-      .from('chapters')
-      .update({ view_count: (chapter.view_count || 0) + 1 })
-      .eq('id', chapterId);
-
-    const { data: story } = await supabase
-      .from('stories')
-      .select('view_count')
-      .eq('id', storyId)
-      .single();
-
-    if (story) {
-      await supabase
-        .from('stories')
-        .update({ view_count: (story.view_count || 0) + 1 })
-        .eq('id', storyId);
-    }
   } catch (viewErr) {
     console.warn(`[getChapterContent] Warning increasing views: ${viewErr.message}`);
   }

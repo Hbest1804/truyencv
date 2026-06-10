@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, List, Settings as SettingsIcon, ChevronLeft, ChevronRight, X, Minus, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -40,22 +40,31 @@ export function ReaderPage() {
   // Hook to get the story meta (e.g. title)
   const { story } = useStory(storyId || null);
 
+  // Ref cờ hiệu: tránh saveProgress ghi đè khi đang restore scroll
+  const isRestoringScroll = useRef(true);
+
   // 1. Restore scroll progress when activeChapter is loaded
   useEffect(() => {
     if (activeChapter) {
+      isRestoringScroll.current = true;
       const savedProgress = activeChapter.reading_progress || 0;
       if (savedProgress > 0 && savedProgress < 99) {
         const timer = setTimeout(() => {
           const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
           if (scrollHeight > 0) {
             const targetY = (savedProgress / 100) * scrollHeight;
-            window.scrollTo({ top: targetY, behavior: 'smooth' });
+            // Dùng instant thay vì smooth — tránh trigger nhiều scroll events không cần thiết
+            window.scrollTo({ top: targetY, behavior: 'instant' });
+            setTimeout(() => { isRestoringScroll.current = false; }, 150);
+          } else {
+            isRestoringScroll.current = false;
           }
-        }, 600); // Wait for content rendering/fonts to layout
+        }, 600);
         return () => clearTimeout(timer);
       } else {
         window.scrollTo(0, 0);
         setReadingProgress(0);
+        isRestoringScroll.current = false;
       }
     }
   }, [activeChapter?.id]);
@@ -63,6 +72,9 @@ export function ReaderPage() {
   // 2. Handle scroll: track progress only (bars are always visible)
   useEffect(() => {
     const handleScroll = () => {
+      // Bỏ qua nếu đang restore vị trí cuộn — tránh ghi đè progress chương mới
+      if (isRestoringScroll.current) return;
+
       const currentScrollY = window.scrollY;
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (scrollHeight > 0) {
