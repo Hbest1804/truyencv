@@ -31,7 +31,7 @@ export default function App() {
         <Header />
         
         <AnimatePresence mode="wait">
-          <Routes>
+          <Routes location={location} {...({ key: location.pathname } as any)}>
             <Route
               path="/"
               element={
