@@ -688,13 +688,16 @@ export const getChapterContent = async (storyId, chapterId, userId = null) => {
   // Tăng lượt xem qua story_views — view_count chapters/stories được cập nhật tự động bằng DB Trigger
   // (atomic, không có race condition khi nhiều user đọc đồng thời)
   try {
-    await supabase.from('story_views').insert({
+    const { error: viewError } = await supabase.from('story_views').insert({
       story_id: storyId,
       user_id: userId,
       chapter_id: chapterId,
     });
+    if (viewError) {
+      console.warn(`[getChapterContent] Warning increasing views: ${viewError.message}`);
+    }
   } catch (viewErr) {
-    console.warn(`[getChapterContent] Warning increasing views: ${viewErr.message}`);
+    console.warn(`[getChapterContent] Exception increasing views: ${viewErr.message}`);
   }
 
   // Lấy vị trí đọc (progress) nếu đã đăng nhập
@@ -741,11 +744,15 @@ export const saveReadingProgress = async (storyId, chapterId, userId, progress) 
   }
 
   // Cập nhật bookmarks nếu có
-  await supabase
+  const { error: bookmarkError } = await supabase
     .from('bookmarks')
     .update({ last_chapter_id: chapterId, updated_at: new Date().toISOString() })
     .eq('user_id', userId)
     .eq('story_id', storyId);
+
+  if (bookmarkError) {
+    console.error(`[saveReadingProgress] Error updating bookmark: ${bookmarkError.message}`);
+  }
 
   return data;
 };
@@ -773,11 +780,15 @@ export const markChapterRead = async (storyId, chapterId, userId) => {
   }
 
   // Cập nhật bookmarks nếu có
-  await supabase
+  const { error: bookmarkError } = await supabase
     .from('bookmarks')
     .update({ last_chapter_id: chapterId, updated_at: new Date().toISOString() })
     .eq('user_id', userId)
     .eq('story_id', storyId);
+
+  if (bookmarkError) {
+    console.error(`[markChapterRead] Error updating bookmark: ${bookmarkError.message}`);
+  }
 
   return data;
 };

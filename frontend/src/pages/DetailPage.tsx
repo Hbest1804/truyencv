@@ -388,19 +388,23 @@ export function DetailPage() {
 
   const rawChapters = storyId && chapters.length > 0
     ? chapters
-    : CHAPTERS.map((ch, idx) => ({
-        id: ch.id,
-        story_id: 'mock',
-        chapter_number: idx + 1,
-        title: ch.title,
-        content: '',
-        word_count: 0,
-        view_count: 0,
-        is_published: true,
-        is_free: true,
-        created_at: new Date(Date.now() - idx * 24 * 60 * 60 * 1000).toISOString(),
-        published_at: null,
-      } as DbChapter));
+    : CHAPTERS.map((ch, idx) => {
+        const dateStr = new Date(Date.now() - idx * 24 * 60 * 60 * 1000).toISOString();
+        return {
+          id: ch.id,
+          story_id: 'mock',
+          chapter_number: idx + 1,
+          title: ch.title,
+          content: '',
+          word_count: 0,
+          view_count: 0,
+          is_published: true,
+          is_free: true,
+          created_at: dateStr,
+          updated_at: dateStr,
+          published_at: null,
+        } as DbChapter;
+      });
 
   const displayedChapters = chapterOrderAsc ? rawChapters : [...rawChapters].reverse();
 
@@ -744,7 +748,7 @@ export function DetailPage() {
                             {ch.title}
                           </span>
                           <span className="text-[10px] font-bold text-on-surface-variant uppercase mt-1.5 tracking-wider">
-                            Cập nhật {'updated_at' in ch && ch.updated_at ? new Date(ch.updated_at).toLocaleDateString('vi-VN') : (ch as any).updatedAt || 'Vừa xong'}
+                            Cập nhật {ch.updated_at ? new Date(ch.updated_at).toLocaleDateString('vi-VN') : 'Vừa xong'}
                           </span>
                         </div>
                         <div className="w-8 h-8 rounded-lg bg-surface-container/60 group-hover:bg-secondary/15 flex items-center justify-center transition-all">
@@ -767,7 +771,7 @@ export function DetailPage() {
                             {ch.title}
                           </span>
                           <span className="text-[10px] font-bold text-on-surface-variant uppercase mt-1.5 tracking-wider">
-                            Cập nhật {'updated_at' in ch && ch.updated_at ? new Date(ch.updated_at).toLocaleDateString('vi-VN') : (ch as any).updatedAt || 'Vừa xong'}
+                            Cập nhật {ch.updated_at ? new Date(ch.updated_at).toLocaleDateString('vi-VN') : 'Vừa xong'}
                           </span>
                         </div>
                         <div className="w-8 h-8 rounded-lg bg-surface-container/60 group-hover:bg-secondary/15 flex items-center justify-center transition-all">

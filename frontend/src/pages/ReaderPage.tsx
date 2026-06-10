@@ -53,8 +53,8 @@ export function ReaderPage() {
           const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
           if (scrollHeight > 0) {
             const targetY = (savedProgress / 100) * scrollHeight;
-            // Dùng instant thay vì smooth — tránh trigger nhiều scroll events không cần thiết
-            window.scrollTo({ top: targetY, behavior: 'instant' });
+            // Dùng auto thay vì smooth — tránh trigger nhiều scroll events không cần thiết
+            window.scrollTo({ top: targetY, behavior: 'auto' });
             setTimeout(() => { isRestoringScroll.current = false; }, 150);
           } else {
             isRestoringScroll.current = false;

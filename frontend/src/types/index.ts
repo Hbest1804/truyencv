@@ -145,6 +145,7 @@ export interface DbChapter {
   is_published: boolean;
   is_free: boolean;
   created_at: string;
+  updated_at: string;
   published_at: string | null;
   reading_progress?: number;
 }

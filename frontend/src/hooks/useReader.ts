@@ -20,23 +20,32 @@ export function useReader(storyId: string | undefined, chapterId: string | undef
   // 1. Fetch chapters list
   useEffect(() => {
     if (!storyId) return;
+    let active = true;
     setChaptersLoading(true);
     storyService.getChapters(storyId, { limit: 1000 })
       .then(res => {
-        setChapters(res.chapters);
-        setChaptersLoading(false);
+        if (active) {
+          setChapters(res.chapters);
+          setChaptersLoading(false);
+        }
       })
       .catch(err => {
-        console.error('Failed to load chapters list:', err);
-        setError(err.message || 'Lỗi khi tải danh sách chương');
-        setChaptersLoading(false);
+        if (active) {
+          console.error('Failed to load chapters list:', err);
+          setError(err.message || 'Lỗi khi tải danh sách chương');
+          setChaptersLoading(false);
+        }
       });
+    return () => {
+      active = false;
+    };
   }, [storyId]);
 
   // 2. Determine and load active chapter
   useEffect(() => {
     if (!storyId || chaptersLoading) return;
     
+    let active = true;
     let targetChapterId = chapterId;
     
     // If no chapterId is specified in URL, we load the first chapter
@@ -56,14 +65,21 @@ export function useReader(storyId: string | undefined, chapterId: string | undef
 
     storyService.getChapter(storyId, targetChapterId)
       .then(data => {
-        setActiveChapter(data);
-        setLoading(false);
+        if (active) {
+          setActiveChapter(data);
+          setLoading(false);
+        }
       })
       .catch(err => {
-        console.error('Failed to load chapter content:', err);
-        setError(err.message || 'Lỗi khi tải nội dung chương');
-        setLoading(false);
+        if (active) {
+          console.error('Failed to load chapter content:', err);
+          setError(err.message || 'Lỗi khi tải nội dung chương');
+          setLoading(false);
+        }
       });
+    return () => {
+      active = false;
+    };
   }, [storyId, chapterId, chaptersLoading, chapters, navigate]);
 
   // Go to next chapter

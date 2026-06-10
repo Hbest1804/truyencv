@@ -769,9 +769,11 @@ CREATE OR REPLACE FUNCTION public.increment_view_counts()
 RETURNS TRIGGER AS $$
 BEGIN
   -- Tăng view_count cho chương (an toàn với concurrent updates)
-  UPDATE public.chapters
-  SET view_count = COALESCE(view_count, 0) + 1
-  WHERE id = NEW.chapter_id;
+  IF NEW.chapter_id IS NOT NULL THEN
+    UPDATE public.chapters
+    SET view_count = COALESCE(view_count, 0) + 1
+    WHERE id = NEW.chapter_id;
+  END IF;
 
   -- Tăng view_count cho truyện
   UPDATE public.stories
