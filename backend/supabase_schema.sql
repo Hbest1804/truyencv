@@ -331,15 +331,38 @@ END $$;
 -- -----------------------------------------------
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    v_username VARCHAR(50);
+    v_display_name VARCHAR(100);
 BEGIN
-    INSERT INTO public.profiles (id, username, display_name, avatar_url, role)
-    VALUES (
-        NEW.id,
-        COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1), 'user_' || substr(NEW.id::text, 1, 8)),
-        COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1), 'User ' || substr(NEW.id::text, 1, 8)),
-        NEW.raw_user_meta_data->>'avatar_url',
-        'reader'
-    );
+    v_username := COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1), 'user_' || substr(NEW.id::text, 1, 8));
+    v_display_name := COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1), 'User ' || substr(NEW.id::text, 1, 8));
+
+    -- Truncate to fit VARCHAR limits
+    v_username := substring(v_username from 1 for 50);
+    v_display_name := substring(v_display_name from 1 for 100);
+
+    BEGIN
+        INSERT INTO public.profiles (id, username, display_name, avatar_url, role)
+        VALUES (
+            NEW.id,
+            v_username,
+            v_display_name,
+            NEW.raw_user_meta_data->>'avatar_url',
+            'reader'
+        );
+    EXCEPTION WHEN unique_violation THEN
+        -- Fallback to a guaranteed unique username using UUID
+        v_username := 'user_' || substr(NEW.id::text, 1, 8);
+        INSERT INTO public.profiles (id, username, display_name, avatar_url, role)
+        VALUES (
+            NEW.id,
+            v_username,
+            v_display_name,
+            NEW.raw_user_meta_data->>'avatar_url',
+            'reader'
+        );
+    END;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
