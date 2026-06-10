@@ -16,6 +16,7 @@ export function useReader(storyId: string | undefined, chapterId: string | undef
   const [error, setError] = useState<string | null>(null);
 
   const progressSaveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const hasMarkedRead = useRef<string | null>(null);
 
   // 1. Fetch chapters list
   useEffect(() => {
@@ -43,27 +44,26 @@ export function useReader(storyId: string | undefined, chapterId: string | undef
 
   // 2. Determine and load active chapter
   useEffect(() => {
-    if (!storyId || chaptersLoading) return;
+    if (!storyId) return;
     
     let active = true;
-    let targetChapterId = chapterId;
     
     // If no chapterId is specified in URL, we load the first chapter
-    if (!targetChapterId) {
+    if (!chapterId) {
+      if (chaptersLoading) return;
       if (chapters.length > 0) {
         // Navigate to the first chapter's URL to sync the state
         navigate(`/stories/${storyId}/reader/${chapters[0].id}`, { replace: true });
-        return;
       } else {
         setLoading(false);
-        return;
       }
+      return;
     }
 
     setLoading(true);
     setError(null);
 
-    storyService.getChapter(storyId, targetChapterId)
+    storyService.getChapter(storyId, chapterId)
       .then(data => {
         if (active) {
           setActiveChapter(data);
@@ -120,8 +120,13 @@ export function useReader(storyId: string | undefined, chapterId: string | undef
   // Mark as read
   const markAsRead = useCallback(() => {
     if (!isAuthenticated || !storyId || !activeChapter) return;
+    if (hasMarkedRead.current === activeChapter.id) return;
+    hasMarkedRead.current = activeChapter.id;
     storyService.markRead(storyId, activeChapter.id)
-      .catch(err => console.warn('Failed to mark chapter as read:', err));
+      .catch(err => {
+        console.warn('Failed to mark chapter as read:', err);
+        hasMarkedRead.current = null;
+      });
   }, [isAuthenticated, storyId, activeChapter]);
 
   // Clear timeout on unmount
@@ -148,7 +153,7 @@ export function useReader(storyId: string | undefined, chapterId: string | undef
   return {
     chapters,
     activeChapter,
-    loading: loading || chaptersLoading,
+    loading: loading,
     error,
     goToNextChapter,
     goToPrevChapter,

@@ -268,18 +268,25 @@ export function DetailPage() {
   const [chaptersLoading, setChaptersLoading] = useState(false);
 
   useEffect(() => {
-    if (storyId) {
-      setChaptersLoading(true);
-      storyService.getChapters(storyId, { limit: 10000 })
-        .then(res => {
+    if (!storyId) return;
+    let active = true;
+    setChaptersLoading(true);
+    storyService.getChapters(storyId, { limit: 10000 })
+      .then(res => {
+        if (active) {
           setChapters(res.chapters);
           setChaptersLoading(false);
-        })
-        .catch(err => {
+        }
+      })
+      .catch(err => {
+        if (active) {
           console.error("Failed to load chapters:", err);
           setChaptersLoading(false);
-        });
-    }
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, [storyId]);
 
   // Rating UI
