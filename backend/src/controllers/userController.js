@@ -118,6 +118,7 @@ export const changePassword = async (req, res, next) => {
  */
 export const getReadingHistory = async (req, res, next) => {
   try {
+    const userId = req.user.id;
     let pageNum = parseInt(req.query.page, 10);
     let limitNum = parseInt(req.query.limit, 10);
     if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
@@ -146,6 +147,7 @@ export const getReadingHistory = async (req, res, next) => {
  */
 export const getLibrary = async (req, res, next) => {
   try {
+    const userId = req.user.id;
     let pageNum = parseInt(req.query.page, 10);
     let limitNum = parseInt(req.query.limit, 10);
     if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
@@ -174,6 +176,7 @@ export const getLibrary = async (req, res, next) => {
  */
 export const getFavorites = async (req, res, next) => {
   try {
+    const userId = req.user.id;
     let pageNum = parseInt(req.query.page, 10);
     let limitNum = parseInt(req.query.limit, 10);
     if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
@@ -202,6 +205,7 @@ export const getFavorites = async (req, res, next) => {
  */
 export const getFollowing = async (req, res, next) => {
   try {
+    const userId = req.user.id;
     let pageNum = parseInt(req.query.page, 10);
     let limitNum = parseInt(req.query.limit, 10);
     if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
