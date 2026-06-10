@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useReader } from '@/hooks/useReader';
 import { useStory } from '@/hooks/useStory';
 
-type ReaderTheme = 'sepia' | 'warm' | 'light' | 'rose' | 'lavender' | 'mint' | 'dark' | 'nordic' | 'forest' | 'ocean';
+type ReaderTheme = 'sepia' | 'warm' | 'white' | 'light' | 'rose' | 'lavender' | 'mint' | 'dark' | 'nordic' | 'forest' | 'ocean';
 type ReaderFont = 'serif' | 'sans' | 'mono';
 type ReaderSpacing = 'tight' | 'normal' | 'relaxed';
 
@@ -99,6 +99,7 @@ export function ReaderPage() {
     // ── Sáng ──
     sepia:    'bg-[#fdf6e3] text-[#4a3728]',
     warm:     'bg-[#f5f0e8] text-[#2c2017]',
+    white:    'bg-[#ffffff] text-[#111111]',
     light:    'bg-[#f9f9f9] text-[#18181b]',
     // ── Pastel ──
     rose:     'bg-[#fff0f3] text-[#5c1a2e]',
@@ -293,23 +294,25 @@ export function ReaderPage() {
               {/* Theme Picker */}
               <div className="space-y-2">
                 <h4 className={`text-[10px] font-bold uppercase tracking-wider ${barMuted}`}>Màu nền trang</h4>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {([
-                    // Row 1 – Sáng & Pastel
-                    { id: 'sepia',    label: 'Cổ điển', bg: '#fdf6e3', border: '#c8b87a', dot: '' },
-                    { id: 'warm',     label: 'Kem',      bg: '#f5f0e8', border: '#c4b8a8', dot: '' },
-                    { id: 'light',    label: 'Giấy',     bg: '#f9f9f9', border: '#d4d4d4', dot: '' },
-                    { id: 'rose',     label: 'Hồng',     bg: '#fff0f3', border: '#f4a0b5', dot: '' },
-                    { id: 'lavender', label: 'Oải hương',bg: '#f3f0ff', border: '#bbaef5', dot: '' },
-                    // Row 2 – Xanh & Tối
-                    { id: 'mint',     label: 'Bạc hà',   bg: '#edfaf4', border: '#7ed3a8', dot: '' },
-                    { id: 'dark',     label: 'Đêm',      bg: '#12141a', border: '#3a3f52', dot: '' },
-                    { id: 'nordic',   label: 'Bắc Âu',   bg: '#1e2536', border: '#4a5580', dot: '' },
-                    { id: 'forest',   label: 'Rừng',     bg: '#142920', border: '#2a5a3a', dot: '' },
-                    { id: 'ocean',    label: 'Đại dương', bg: '#0b1e2d', border: '#1a4a6e', dot: '' },
-                  ] as { id: ReaderTheme; label: string; bg: string; border: string; dot: string }[]).map(t => {
+                    // Sáng
+                    { id: 'sepia',    label: 'Cổ điển',    bg: '#fdf6e3', border: '#c8b87a' },
+                    { id: 'warm',     label: 'Kem',         bg: '#f5f0e8', border: '#c4b8a8' },
+                    { id: 'white',    label: 'Trắng',       bg: '#ffffff', border: '#cccccc' },
+                    { id: 'light',    label: 'Xám nhạt',    bg: '#f9f9f9', border: '#d4d4d4' },
+                    // Pastel
+                    { id: 'rose',     label: 'Hồng',        bg: '#fff0f3', border: '#f4a0b5' },
+                    { id: 'lavender', label: 'Oải hương',   bg: '#f3f0ff', border: '#bbaef5' },
+                    { id: 'mint',     label: 'Bạc hà',      bg: '#edfaf4', border: '#7ed3a8' },
+                    // Tối
+                    { id: 'dark',     label: 'Đêm',         bg: '#12141a', border: '#3a3f52' },
+                    { id: 'nordic',   label: 'Bắc Âu',      bg: '#1e2536', border: '#4a5580' },
+                    { id: 'forest',   label: 'Rừng',        bg: '#142920', border: '#2a5a3a' },
+                    { id: 'ocean',    label: 'Đại dương',   bg: '#0b1e2d', border: '#1a4a6e' },
+                  ] as { id: ReaderTheme; label: string; bg: string; border: string }[]).map(t => {
                     const active = theme === t.id;
-                    const isLight = ['sepia','warm','light','rose','lavender','mint'].includes(t.id);
+                    const isLight = ['sepia','warm','white','light','rose','lavender','mint'].includes(t.id);
                     return (
                       <button
                         key={t.id}
