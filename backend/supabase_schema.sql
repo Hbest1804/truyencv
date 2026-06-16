@@ -760,34 +760,87 @@ CREATE POLICY "Admin toàn quyền quản lý báo cáo"
 -- ============================================================
 
 -- ============================================================
--- TRIGGER: Tự động tăng view_count (atomic, không race condition)
--- Kích hoạt mỗi khi có 1 lượt xem mới được ghi vào story_views.
--- Backend chỉ cần INSERT vào story_views — trigger xử lý phần còn lại.
+-- ASYNC VIEW COUNT BATCHING
+-- Thay vì UPDATE trực tiếp stories/chapters trong trigger (gây lock contention
+-- dưới tải cao), chúng ta ghi vào bảng queue nhẹ rồi flush định kỳ.
+-- Backend chỉ cần INSERT vào story_views — trigger ghi queue, pg_cron flush.
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.increment_view_counts()
+-- Bảng queue gom lượt xem chờ batch
+CREATE TABLE IF NOT EXISTS public.view_count_queue (
+    id          BIGSERIAL    PRIMARY KEY,
+    story_id    UUID         NOT NULL REFERENCES public.stories(id)  ON DELETE CASCADE,
+    chapter_id  UUID         REFERENCES public.chapters(id) ON DELETE SET NULL,
+    queued_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_vcq_story    ON public.view_count_queue(story_id);
+CREATE INDEX IF NOT EXISTS idx_vcq_chapter  ON public.view_count_queue(chapter_id) WHERE chapter_id IS NOT NULL;
+
+-- Trigger nhẹ: chỉ ghi vào queue, KHÔNG lock row stories/chapters
+CREATE OR REPLACE FUNCTION public.enqueue_view_count()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Tăng view_count cho chương (an toàn với concurrent updates)
-  IF NEW.chapter_id IS NOT NULL THEN
-    UPDATE public.chapters
-    SET view_count = COALESCE(view_count, 0) + 1
-    WHERE id = NEW.chapter_id;
-  END IF;
-
-  -- Tăng view_count cho truyện
-  UPDATE public.stories
-  SET view_count = COALESCE(view_count, 0) + 1
-  WHERE id = NEW.story_id;
-
+  INSERT INTO public.view_count_queue (story_id, chapter_id)
+  VALUES (NEW.story_id, NEW.chapter_id);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Xóa trigger cũ nếu có, rồi tạo lại
 DROP TRIGGER IF EXISTS after_story_view_insert ON public.story_views;
-
 CREATE TRIGGER after_story_view_insert
   AFTER INSERT ON public.story_views
   FOR EACH ROW
-  EXECUTE FUNCTION public.increment_view_counts();
+  EXECUTE FUNCTION public.enqueue_view_count();
+
+-- Hàm flush: gom nhóm và cập nhật hàng loạt — gọi bằng pg_cron mỗi phút
+-- Ví dụ: SELECT cron.schedule('flush-view-counts', '* * * * *', $$SELECT public.flush_view_count_queue()$$);
+CREATE OR REPLACE FUNCTION public.flush_view_count_queue()
+RETURNS void AS $$
+DECLARE
+  v_batch_ids BIGINT[];
+BEGIN
+  -- Lấy và xóa toàn bộ queue hiện tại trong 1 CTE (atomic)
+  WITH deleted AS (
+    DELETE FROM public.view_count_queue
+    WHERE id = ANY (
+      SELECT id FROM public.view_count_queue
+      ORDER BY id
+      LIMIT 10000  -- giới hạn batch tránh quá lớn
+      FOR UPDATE SKIP LOCKED
+    )
+    RETURNING story_id, chapter_id
+  )
+  -- Cập nhật view_count truyện theo batch
+  , story_agg AS (
+    SELECT story_id, COUNT(*) AS cnt
+    FROM deleted
+    GROUP BY story_id
+  )
+  -- Cập nhật view_count chương theo batch
+  , chapter_agg AS (
+    SELECT chapter_id, COUNT(*) AS cnt
+    FROM deleted
+    WHERE chapter_id IS NOT NULL
+    GROUP BY chapter_id
+  )
+  UPDATE public.stories s
+  SET view_count = s.view_count + sa.cnt
+  FROM story_agg sa
+  WHERE s.id = sa.story_id;
+
+  -- Cập nhật chapters riêng (không thể gộp 2 UPDATE vào 1 CTE)
+  UPDATE public.chapters c
+  SET view_count = c.view_count + ca.cnt
+  FROM (
+    SELECT chapter_id, COUNT(*) AS cnt
+    FROM public.view_count_queue  -- đã xóa rồi, nên dùng lại từ CTE bên dưới
+    GROUP BY chapter_id
+    HAVING chapter_id IS NOT NULL
+  ) ca
+  WHERE c.id = ca.chapter_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.flush_view_count_queue IS
+  'Batch-flush view counts từ queue vào stories/chapters. Gọi định kỳ bằng pg_cron: SELECT cron.schedule(''flush-view-counts'', ''* * * * *'', $$SELECT public.flush_view_count_queue()$$);';

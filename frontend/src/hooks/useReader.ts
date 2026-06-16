@@ -42,24 +42,21 @@ export function useReader(storyId: string | undefined, chapterId: string | undef
     };
   }, [storyId]);
 
-  // 2. Determine and load active chapter
+  // 2. Redirect to first chapter if no chapterId is specified
   useEffect(() => {
-    if (!storyId) return;
-    
-    let active = true;
-    
-    // If no chapterId is specified in URL, we load the first chapter
-    if (!chapterId) {
-      if (chaptersLoading) return;
-      if (chapters.length > 0) {
-        // Navigate to the first chapter's URL to sync the state
-        navigate(`/stories/${storyId}/reader/${chapters[0].id}`, { replace: true });
-      } else {
-        setLoading(false);
-      }
-      return;
+    if (!storyId || chapterId || chaptersLoading) return;
+    if (chapters.length > 0) {
+      navigate(`/stories/${storyId}/reader/${chapters[0].id}`, { replace: true });
+    } else {
+      setLoading(false);
     }
+  }, [storyId, chapterId, chaptersLoading, chapters, navigate]);
 
+  // 3. Load active chapter content
+  useEffect(() => {
+    if (!storyId || !chapterId) return;
+
+    let active = true;
     setLoading(true);
     setError(null);
 
@@ -77,10 +74,11 @@ export function useReader(storyId: string | undefined, chapterId: string | undef
           setLoading(false);
         }
       });
+
     return () => {
       active = false;
     };
-  }, [storyId, chapterId, chaptersLoading, chapters, navigate]);
+  }, [storyId, chapterId]);
 
   // Go to next chapter
   const goToNextChapter = useCallback(() => {
