@@ -797,10 +797,10 @@ CREATE TRIGGER after_story_view_insert
 -- Ví dụ: SELECT cron.schedule('flush-view-counts', '* * * * *', $$SELECT public.flush_view_count_queue()$$);
 CREATE OR REPLACE FUNCTION public.flush_view_count_queue()
 RETURNS void AS $$
-DECLARE
-  v_batch_ids BIGINT[];
 BEGIN
-  -- Lấy và xóa toàn bộ queue hiện tại trong 1 CTE (atomic)
+  -- Toàn bộ logic nằm trong 1 câu lệnh SQL duy nhất với Writable CTE.
+  -- Tất cả các CTE (deleted, story_agg, chapter_agg, update_stories) chia sẻ
+  -- cùng 1 snapshot dữ liệu — đảm bảo không mất lượt xem chương.
   WITH deleted AS (
     DELETE FROM public.view_count_queue
     WHERE id = ANY (
@@ -811,36 +811,34 @@ BEGIN
     )
     RETURNING story_id, chapter_id
   )
-  -- Cập nhật view_count truyện theo batch
+  -- Gom nhóm lượt xem truyện theo batch
   , story_agg AS (
     SELECT story_id, COUNT(*) AS cnt
     FROM deleted
     GROUP BY story_id
   )
-  -- Cập nhật view_count chương theo batch
+  -- Gom nhóm lượt xem chương theo batch
   , chapter_agg AS (
     SELECT chapter_id, COUNT(*) AS cnt
     FROM deleted
     WHERE chapter_id IS NOT NULL
     GROUP BY chapter_id
   )
-  UPDATE public.stories s
-  SET view_count = s.view_count + sa.cnt
-  FROM story_agg sa
-  WHERE s.id = sa.story_id;
-
-  -- Cập nhật chapters riêng (không thể gộp 2 UPDATE vào 1 CTE)
+  -- Cập nhật view_count truyện bên trong CTE (Writable CTE)
+  , update_stories AS (
+    UPDATE public.stories s
+    SET view_count = s.view_count + sa.cnt
+    FROM story_agg sa
+    WHERE s.id = sa.story_id
+  )
+  -- Cập nhật view_count chương — dùng chung chapter_agg từ cùng snapshot deleted
   UPDATE public.chapters c
   SET view_count = c.view_count + ca.cnt
-  FROM (
-    SELECT chapter_id, COUNT(*) AS cnt
-    FROM public.view_count_queue  -- đã xóa rồi, nên dùng lại từ CTE bên dưới
-    GROUP BY chapter_id
-    HAVING chapter_id IS NOT NULL
-  ) ca
+  FROM chapter_agg ca
   WHERE c.id = ca.chapter_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 COMMENT ON FUNCTION public.flush_view_count_queue IS
-  'Batch-flush view counts từ queue vào stories/chapters. Gọi định kỳ bằng pg_cron: SELECT cron.schedule(''flush-view-counts'', ''* * * * *'', $$SELECT public.flush_view_count_queue()$$);';
+  'Batch-flush view counts từ queue vào stories/chapters bằng Writable CTE đơn.
+   Gọi định kỳ bằng pg_cron: SELECT cron.schedule(''flush-view-counts'', ''* * * * *'', $$SELECT public.flush_view_count_queue()$$);';
