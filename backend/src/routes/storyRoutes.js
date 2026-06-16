@@ -11,6 +11,10 @@ import {
   rateStoryHandler,
   reportStoryHandler,
   shareStoryHandler,
+  listChaptersOfStoryHandler,
+  getChapterContentHandler,
+  saveReadingProgressHandler,
+  markChapterReadHandler,
 } from '../controllers/storyController.js';
 import { authMiddleware, optionalAuthMiddleware } from '../middlewares/authMiddleware.js';
 
@@ -106,5 +110,39 @@ router.post('/:storyId/rate', authMiddleware, rateStoryHandler);
  * @access  Private
  */
 router.post('/:storyId/report', authMiddleware, reportStoryHandler);
+
+// ──────────────────────────────────────────────
+// CHAPTER ROUTES
+// ──────────────────────────────────────────────
+
+/**
+ * @route   GET /api/stories/:storyId/chapters
+ * @desc    Danh sách chương của một truyện
+ * @query   page, limit
+ * @access  Public
+ */
+router.get('/:storyId/chapters', listChaptersOfStoryHandler);
+
+/**
+ * @route   GET /api/stories/:storyId/chapters/:chapterId
+ * @desc    Nội dung một chương
+ * @access  Public (optional auth)
+ */
+router.get('/:storyId/chapters/:chapterId', optionalAuthMiddleware, getChapterContentHandler);
+
+/**
+ * @route   POST /api/stories/:storyId/chapters/:chapterId/progress
+ * @desc    Lưu vị trí đọc
+ * @body    { progress: 0-100 }
+ * @access  Private
+ */
+router.post('/:storyId/chapters/:chapterId/progress', authMiddleware, saveReadingProgressHandler);
+
+/**
+ * @route   POST /api/stories/:storyId/chapters/:chapterId/mark-read
+ * @desc    Đánh dấu đã đọc
+ * @access  Private
+ */
+router.post('/:storyId/chapters/:chapterId/mark-read', authMiddleware, markChapterReadHandler);
 
 export default router;

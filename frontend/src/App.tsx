@@ -65,6 +65,14 @@ export default function App() {
               }
             />
             <Route
+              path="/stories/:storyId/reader/:chapterId"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <ReaderPage />
+                </motion.div>
+              }
+            />
+            <Route
               path="/profile"
               element={
                 <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">

@@ -10,6 +10,10 @@ import {
   rateStory,
   reportStory,
   shareStory,
+  getChaptersOfStory,
+  getChapterContent,
+  saveReadingProgress,
+  markChapterRead,
 } from '../services/storyService.js';
 
 /**
@@ -279,6 +283,105 @@ export const shareStoryHandler = async (req, res, next) => {
       success: true,
       message: 'Tạo link chia sẻ thành công!',
       data: shareData,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/stories/:storyId/chapters
+ * Query: page, limit
+ */
+export const listChaptersOfStoryHandler = async (req, res, next) => {
+  try {
+    const { storyId } = req.params;
+    const { page = 1, limit = 50 } = req.query;
+
+    const safeLimit = Math.max(1, Math.min(Number(limit) || 50, 10000));
+    const safePage = Math.max(Number(page) || 1, 1);
+
+    const result = await getChaptersOfStory(storyId, { page: safePage, limit: safeLimit });
+
+    return res.status(200).json({
+      success: true,
+      data: result.chapters,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        totalPages: result.totalPages,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/stories/:storyId/chapters/:chapterId
+ */
+export const getChapterContentHandler = async (req, res, next) => {
+  try {
+    const { storyId, chapterId } = req.params;
+    const userId = req.user?.id || null;
+
+    const chapter = await getChapterContent(storyId, chapterId, userId);
+
+    return res.status(200).json({
+      success: true,
+      data: chapter,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/stories/:storyId/chapters/:chapterId/progress
+ * Body: { progress }
+ */
+export const saveReadingProgressHandler = async (req, res, next) => {
+  try {
+    const { storyId, chapterId } = req.params;
+    const userId = req.user.id;
+    const { progress } = req.body;
+
+    if (progress === undefined || progress === null) {
+      return res.status(400).json({
+        success: false,
+        message: 'progress là bắt buộc (số nguyên từ 0 đến 100)',
+      });
+    }
+
+    const safeProgress = Math.max(0, Math.min(Number(progress) || 0, 100));
+
+    const history = await saveReadingProgress(storyId, chapterId, userId, safeProgress);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Lưu vị trí đọc thành công!',
+      data: history,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/stories/:storyId/chapters/:chapterId/mark-read
+ */
+export const markChapterReadHandler = async (req, res, next) => {
+  try {
+    const { storyId, chapterId } = req.params;
+    const userId = req.user.id;
+
+    const history = await markChapterRead(storyId, chapterId, userId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Đã đánh dấu đã đọc chương truyện!',
+      data: history,
     });
   } catch (error) {
     next(error);

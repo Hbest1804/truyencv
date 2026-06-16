@@ -49,7 +49,7 @@ export function Header() {
   };
 
   // Hide header on reader view
-  if (path.endsWith('/reader')) return null;
+  if (path.includes('/reader')) return null;
 
   return (
     <>

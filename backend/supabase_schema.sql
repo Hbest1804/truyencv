@@ -758,3 +758,87 @@ CREATE POLICY "Admin toàn quyền quản lý báo cáo"
 -- ============================================================
 -- KẾT THÚC SCHEMA
 -- ============================================================
+
+-- ============================================================
+-- ASYNC VIEW COUNT BATCHING
+-- Thay vì UPDATE trực tiếp stories/chapters trong trigger (gây lock contention
+-- dưới tải cao), chúng ta ghi vào bảng queue nhẹ rồi flush định kỳ.
+-- Backend chỉ cần INSERT vào story_views — trigger ghi queue, pg_cron flush.
+-- ============================================================
+
+-- Bảng queue gom lượt xem chờ batch
+CREATE TABLE IF NOT EXISTS public.view_count_queue (
+    id          BIGSERIAL    PRIMARY KEY,
+    story_id    UUID         NOT NULL REFERENCES public.stories(id)  ON DELETE CASCADE,
+    chapter_id  UUID         REFERENCES public.chapters(id) ON DELETE SET NULL,
+    queued_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_vcq_story    ON public.view_count_queue(story_id);
+CREATE INDEX IF NOT EXISTS idx_vcq_chapter  ON public.view_count_queue(chapter_id) WHERE chapter_id IS NOT NULL;
+
+-- Trigger nhẹ: chỉ ghi vào queue, KHÔNG lock row stories/chapters
+CREATE OR REPLACE FUNCTION public.enqueue_view_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.view_count_queue (story_id, chapter_id)
+  VALUES (NEW.story_id, NEW.chapter_id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS after_story_view_insert ON public.story_views;
+CREATE TRIGGER after_story_view_insert
+  AFTER INSERT ON public.story_views
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enqueue_view_count();
+
+-- Hàm flush: gom nhóm và cập nhật hàng loạt — gọi bằng pg_cron mỗi phút
+-- Ví dụ: SELECT cron.schedule('flush-view-counts', '* * * * *', $$SELECT public.flush_view_count_queue()$$);
+CREATE OR REPLACE FUNCTION public.flush_view_count_queue()
+RETURNS void AS $$
+BEGIN
+  -- Toàn bộ logic nằm trong 1 câu lệnh SQL duy nhất với Writable CTE.
+  -- Tất cả các CTE (deleted, story_agg, chapter_agg, update_stories) chia sẻ
+  -- cùng 1 snapshot dữ liệu — đảm bảo không mất lượt xem chương.
+  WITH deleted AS (
+    DELETE FROM public.view_count_queue
+    WHERE id = ANY (
+      SELECT id FROM public.view_count_queue
+      ORDER BY id
+      LIMIT 10000  -- giới hạn batch tránh quá lớn
+      FOR UPDATE SKIP LOCKED
+    )
+    RETURNING story_id, chapter_id
+  )
+  -- Gom nhóm lượt xem truyện theo batch
+  , story_agg AS (
+    SELECT story_id, COUNT(*) AS cnt
+    FROM deleted
+    GROUP BY story_id
+  )
+  -- Gom nhóm lượt xem chương theo batch
+  , chapter_agg AS (
+    SELECT chapter_id, COUNT(*) AS cnt
+    FROM deleted
+    WHERE chapter_id IS NOT NULL
+    GROUP BY chapter_id
+  )
+  -- Cập nhật view_count truyện bên trong CTE (Writable CTE)
+  , update_stories AS (
+    UPDATE public.stories s
+    SET view_count = s.view_count + sa.cnt
+    FROM story_agg sa
+    WHERE s.id = sa.story_id
+  )
+  -- Cập nhật view_count chương — dùng chung chapter_agg từ cùng snapshot deleted
+  UPDATE public.chapters c
+  SET view_count = c.view_count + ca.cnt
+  FROM chapter_agg ca
+  WHERE c.id = ca.chapter_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION public.flush_view_count_queue IS
+  'Batch-flush view counts từ queue vào stories/chapters bằng Writable CTE đơn.
+   Gọi định kỳ bằng pg_cron: SELECT cron.schedule(''flush-view-counts'', ''* * * * *'', $$SELECT public.flush_view_count_queue()$$);';

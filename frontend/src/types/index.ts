@@ -133,3 +133,19 @@ export interface RatingData {
 }
 
 export type ReportReason = 'spam' | 'copyright' | 'inappropriate' | 'wrong_category' | 'other';
+
+export interface DbChapter {
+  id: string;
+  story_id: string;
+  chapter_number: number;
+  title: string;
+  content: string;
+  word_count: number;
+  view_count: number;
+  is_published: boolean;
+  is_free: boolean;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+  reading_progress?: number;
+}

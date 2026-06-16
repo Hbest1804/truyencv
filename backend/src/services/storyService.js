@@ -637,3 +637,158 @@ export const shareStory = async (storyId, userId = null, platform = 'general') =
     },
   };
 };
+
+// ============================================================
+// GET /stories/:storyId/chapters - Danh sách chương của một truyện
+// ============================================================
+export const getChaptersOfStory = async (storyId, { page = 1, limit = 50 } = {}) => {
+  const offset = (page - 1) * limit;
+
+  const { data, error, count } = await supabase
+    .from('chapters')
+    .select('id, story_id, chapter_number, title, word_count, is_published, is_free, published_at, created_at', { count: 'exact' })
+    .eq('story_id', storyId)
+    .eq('is_published', true)
+    .order('chapter_number', { ascending: true })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    const err = new Error(error.message);
+    err.statusCode = 500;
+    throw err;
+  }
+
+  return {
+    chapters: data || [],
+    total: count || 0,
+    page: Number(page),
+    limit: Number(limit),
+    totalPages: Math.ceil((count || 0) / limit),
+  };
+};
+
+// ============================================================
+// GET /stories/:storyId/chapters/:chapterId - Nội dung một chương
+// ============================================================
+export const getChapterContent = async (storyId, chapterId, userId = null) => {
+  const { data: chapter, error } = await supabase
+    .from('chapters')
+    .select('id, story_id, chapter_number, title, content, word_count, view_count, is_published, is_free, created_at, published_at')
+    .eq('id', chapterId)
+    .eq('story_id', storyId)
+    .eq('is_published', true)
+    .single();
+
+  if (error || !chapter) {
+    const err = new Error('Chương truyện không tồn tại');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Tăng lượt xem qua story_views — view_count chapters/stories được cập nhật tự động bằng DB Trigger
+  // (atomic, không có race condition khi nhiều user đọc đồng thời)
+  try {
+    const { error: viewError } = await supabase.from('story_views').insert({
+      story_id: storyId,
+      user_id: userId,
+      chapter_id: chapterId,
+    });
+    if (viewError) {
+      console.warn(`[getChapterContent] Warning increasing views: ${viewError.message}`);
+    }
+  } catch (viewErr) {
+    console.warn(`[getChapterContent] Exception increasing views: ${viewErr.message}`);
+  }
+
+  // Lấy vị trí đọc (progress) nếu đã đăng nhập
+  let progress = 0;
+  if (userId) {
+    const { data: history } = await supabase
+      .from('reading_history')
+      .select('progress')
+      .eq('user_id', userId)
+      .eq('chapter_id', chapterId)
+      .maybeSingle();
+
+    if (history) {
+      progress = history.progress;
+    }
+  }
+
+  return {
+    ...chapter,
+    reading_progress: progress,
+  };
+};
+
+// ============================================================
+// POST /stories/:storyId/chapters/:chapterId/progress - Lưu vị trí đọc
+// ============================================================
+export const saveReadingProgress = async (storyId, chapterId, userId, progress) => {
+  const { data, error } = await supabase
+    .from('reading_history')
+    .upsert({
+      user_id: userId,
+      story_id: storyId,
+      chapter_id: chapterId,
+      progress: Number(progress),
+      read_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,chapter_id' })
+    .select()
+    .single();
+
+  if (error) {
+    const err = new Error(error.message);
+    err.statusCode = 500;
+    throw err;
+  }
+
+  // Cập nhật bookmarks nếu có
+  const { error: bookmarkError } = await supabase
+    .from('bookmarks')
+    .update({ last_chapter_id: chapterId, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('story_id', storyId);
+
+  if (bookmarkError) {
+    console.error(`[saveReadingProgress] Error updating bookmark: ${bookmarkError.message}`);
+  }
+
+  return data;
+};
+
+// ============================================================
+// POST /stories/:storyId/chapters/:chapterId/mark-read - Đánh dấu đã đọc
+// ============================================================
+export const markChapterRead = async (storyId, chapterId, userId) => {
+  const { data, error } = await supabase
+    .from('reading_history')
+    .upsert({
+      user_id: userId,
+      story_id: storyId,
+      chapter_id: chapterId,
+      progress: 100,
+      read_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,chapter_id' })
+    .select()
+    .single();
+
+  if (error) {
+    const err = new Error(error.message);
+    err.statusCode = 500;
+    throw err;
+  }
+
+  // Cập nhật bookmarks nếu có
+  const { error: bookmarkError } = await supabase
+    .from('bookmarks')
+    .update({ last_chapter_id: chapterId, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('story_id', storyId);
+
+  if (bookmarkError) {
+    console.error(`[markChapterRead] Error updating bookmark: ${bookmarkError.message}`);
+  }
+
+  return data;
+};
