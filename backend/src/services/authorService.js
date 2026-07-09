@@ -268,7 +268,7 @@ export const uploadStoryCover = async (authorId, storyId, fileBuffer, mimeType) 
     'image/gif': 'gif'
   };
   const ext = mimeToExt[mimeType] || 'jpg';
-  const filePath = `covers/${authorId}/${storyId}-${Date.now()}.${ext}`;
+  const filePath = `${authorId}/${storyId}-${Date.now()}.${ext}`;
 
   const { data, error } = await supabase
     .storage
@@ -486,9 +486,15 @@ export const getChapterDetail = async (authorId, storyId, chapterId) => {
     .select('*')
     .eq('id', chapterId)
     .eq('story_id', storyId)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
+    const err = new Error(error.message);
+    err.statusCode = 500;
+    throw err;
+  }
+
+  if (!data) {
     const err = new Error('Chương không tồn tại');
     err.statusCode = 404;
     throw err;
