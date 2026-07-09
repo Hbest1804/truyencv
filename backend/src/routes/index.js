@@ -3,6 +3,7 @@ import healthRoutes from './healthRoutes.js';
 import authRoutes from './authRoutes.js';
 import storyRoutes from './storyRoutes.js';
 import userRoutes from './userRoutes.js';
+import authorRoutes from './authorRoutes.js';
 
 const router = express.Router();
 
@@ -11,6 +12,7 @@ router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/stories', storyRoutes);
 router.use('/users', userRoutes);
+router.use('/author', authorRoutes);
 
 
 export default router;

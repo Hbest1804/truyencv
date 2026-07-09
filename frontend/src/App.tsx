@@ -1,7 +1,7 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Header, Footer } from '@/layouts';
-import { HomePage, DiscoverPage, DetailPage, ReaderPage, ProfilePage, LoginPage, RegisterPage } from '@/pages';
+import { HomePage, DiscoverPage, DetailPage, ReaderPage, ProfilePage, LoginPage, RegisterPage, AuthorDashboard, AuthorStoryEdit, AuthorChapters, AuthorChapterEdit } from '@/pages';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -93,6 +93,55 @@ export default function App() {
               element={
                 <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
                   <RegisterPage />
+                </motion.div>
+              }
+            />
+            {/* Author Routes */}
+            <Route
+              path="/author/stories"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <AuthorDashboard />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/author/stories/:storyId/edit"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <AuthorStoryEdit />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/author/stories/new"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <AuthorStoryEdit />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/author/stories/:storyId/chapters"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <AuthorChapters />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/author/stories/:storyId/chapters/:chapterId/edit"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <AuthorChapterEdit />
+                </motion.div>
+              }
+            />
+            <Route
+              path="/author/stories/:storyId/chapters/new"
+              element={
+                <motion.div variants={viewVariants} initial="initial" animate="animate" exit="exit" className="flex-1 flex flex-col w-full">
+                  <AuthorChapterEdit />
                 </motion.div>
               }
             />
