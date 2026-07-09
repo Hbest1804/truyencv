@@ -57,8 +57,11 @@ export const createStory = async (authorId, { title, description, genreIds, stat
   const { error: sgError } = await supabase.from('story_genres').insert(storyGenres);
 
   if (sgError) {
-    // Tạm bỏ qua lỗi này hoặc có thể rollback, nhưng Supabase API REST ko hỗ trợ transaction native, trừ khi dùng RPC
-    console.error('Error inserting story_genres:', sgError.message);
+    // Rollback story creation to maintain database consistency
+    await supabase.from('stories').delete().eq('id', story.id);
+    const err = new Error(`Failed to associate genres: ${sgError.message}`);
+    err.statusCode = 500;
+    throw err;
   }
 
   return story;
@@ -253,11 +256,12 @@ export const createChapter = async (authorId, storyId, { title, content, status 
       .eq('story_id', storyId)
       .order('chapter_number', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
     chapterNumber = lastChapter ? lastChapter.chapter_number + 1 : 1;
   }
 
-  const wordCount = content.replace(/<[^>]*>?/gm, '').trim().split(/\s+/).length;
+  const plainText = content.replace(/<[^>]+>/g, '').trim();
+  const wordCount = plainText ? plainText.split(/\s+/).length : 0;
   const isPublished = status === 'published';
   const publishedAt = isPublished ? new Date().toISOString() : null;
 
@@ -327,7 +331,8 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
   if (title) updates.title = title;
   if (content) {
     updates.content = content;
-    updates.word_count = content.replace(/<[^>]*>?/gm, '').trim().split(/\s+/).length;
+    const plainText = content.replace(/<[^>]+>/g, '').trim();
+    updates.word_count = plainText ? plainText.split(/\s+/).length : 0;
   }
   if (status) {
     updates.status = status;
