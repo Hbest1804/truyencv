@@ -4,7 +4,10 @@ import { authMiddleware, requireRole } from '../middlewares/authMiddleware.js';
 import * as authorController from '../controllers/authorController.js';
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // Limit file size to 5MB to prevent OOM/DoS
+});
 
 // All routes require authentication and 'author' or 'admin' role
 router.use(authMiddleware, requireRole(['author', 'admin']));

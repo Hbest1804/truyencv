@@ -65,6 +65,12 @@ export const uploadStoryCover = async (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
+    
+    // Validate mimetype to ensure only images are uploaded
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedMimeTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({ success: false, message: 'Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed.' });
+    }
     const story = await authorService.uploadStoryCover(
       req.user.id,
       req.params.storyId,

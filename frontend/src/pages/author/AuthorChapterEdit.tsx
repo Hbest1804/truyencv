@@ -44,7 +44,10 @@ export function AuthorChapterEdit() {
         content: chapter.content || '',
         status: chapter.status || 'draft',
         number: chapter.chapter_number?.toString() || '',
-        scheduledAt: chapter.scheduled_at ? new Date(chapter.scheduled_at).toISOString().slice(0, 16) : '',
+        scheduledAt: chapter.scheduled_at ? (() => {
+          const d = new Date(chapter.scheduled_at);
+          return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        })() : '',
       });
       if (chapter.scheduled_at) {
         setIsScheduling(true);

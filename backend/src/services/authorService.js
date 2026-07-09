@@ -116,9 +116,19 @@ export const updateStory = async (authorId, storyId, { title, description, genre
   }
 
   if (genreIds && Array.isArray(genreIds)) {
-    await supabase.from('story_genres').delete().eq('story_id', storyId);
+    const { error: delError } = await supabase.from('story_genres').delete().eq('story_id', storyId);
+    if (delError) {
+      const err = new Error(`Failed to clear old genres: ${delError.message}`);
+      err.statusCode = 500;
+      throw err;
+    }
     const storyGenres = genreIds.map((gId) => ({ story_id: storyId, genre_id: gId }));
-    await supabase.from('story_genres').insert(storyGenres);
+    const { error: insError } = await supabase.from('story_genres').insert(storyGenres);
+    if (insError) {
+      const err = new Error(`Failed to update genres: ${insError.message}`);
+      err.statusCode = 500;
+      throw err;
+    }
   }
 
   return story;
