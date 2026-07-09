@@ -136,11 +136,17 @@ export const updateStory = async (authorId, storyId, { title, description, genre
     .eq('id', storyId)
     .eq('author_id', authorId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     const err = new Error(error.message);
     err.statusCode = 500;
+    throw err;
+  }
+
+  if (!story) {
+    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = 404;
     throw err;
   }
 
@@ -329,6 +335,7 @@ export const createChapter = async (authorId, storyId, { title, content, status 
     throw err;
   }
 
+  let chapterNumber = null;
   if (number !== undefined && number !== null) {
     const parsedNumber = parseInt(number, 10);
     if (isNaN(parsedNumber) || parsedNumber <= 0) {
@@ -336,6 +343,7 @@ export const createChapter = async (authorId, storyId, { title, content, status 
       err.statusCode = 400;
       throw err;
     }
+    chapterNumber = parsedNumber;
   }
 
   // Check ownership
@@ -358,8 +366,7 @@ export const createChapter = async (authorId, storyId, { title, content, status 
   }
 
   // Calculate chapter_number if not provided
-  let chapterNumber = number;
-  if (chapterNumber === undefined || chapterNumber === null) {
+  if (chapterNumber === null) {
     const { data: lastChapter } = await supabase
       .from('chapters')
       .select('chapter_number')
@@ -513,11 +520,17 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
     .eq('id', chapterId)
     .eq('story_id', storyId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     const err = new Error(error.message);
     err.statusCode = 500;
+    throw err;
+  }
+
+  if (!data) {
+    const err = new Error('Chương không tồn tại');
+    err.statusCode = 404;
     throw err;
   }
 

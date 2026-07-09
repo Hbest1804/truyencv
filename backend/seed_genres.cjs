@@ -16,14 +16,18 @@ const GENRES = [
 ];
 
 async function seed() {
-  for (let i = 0; i < GENRES.length; i++) {
-    const g = GENRES[i];
-    await supabase.from('genres').upsert({
+  try {
+    const genresToUpsert = GENRES.map((g, i) => ({
       id: i + 1,
       name: g.label,
       slug: g.slug
-    });
+    }));
+    const { error } = await supabase.from('genres').upsert(genresToUpsert);
+    if (error) throw error;
+    console.log('Done');
+  } catch (error) {
+    console.error('Seeding failed:', error);
+    process.exit(1);
   }
-  console.log('Done');
 }
 seed();
