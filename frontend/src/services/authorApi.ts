@@ -3,7 +3,8 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 function getAccessToken(): string | null {
   const token = localStorage.getItem('supabase_access_token');
   if (token) return token;
-  const storageStr = localStorage.getItem('sb-vydvcofnvhwoupbgsmyt-auth-token');
+  const storageKey = Object.keys(localStorage).find(key => key.startsWith('sb-') && key.endsWith('-auth-token'));
+  const storageStr = storageKey ? localStorage.getItem(storageKey) : null;
   if (storageStr) {
     try {
       const storageObj = JSON.parse(storageStr);

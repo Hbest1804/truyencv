@@ -154,8 +154,15 @@ export const changeStoryStatus = async (authorId, storyId, status) => {
 };
 
 export const uploadStoryCover = async (authorId, storyId, fileBuffer, mimeType, originalName) => {
-  // Upload to supabase storage
-  const ext = originalName.split('.').pop();
+  // Map mimeType to extension to prevent path traversal via client-controlled originalName
+  const mimeToExt = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif'
+  };
+  const ext = mimeToExt[mimeType] || 'jpg';
   const filePath = `covers/${authorId}/${storyId}-${Date.now()}.${ext}`;
 
   const { data, error } = await supabase
