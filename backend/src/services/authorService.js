@@ -1,5 +1,6 @@
 import { supabase } from '../config/database.js';
 import { generateSlug } from '../utils/slugify.js';
+import sanitizeHtml from 'sanitize-html';
 
 // ─── TÁC GIẢ - QUẢN LÝ TRUYỆN ───────────────────────────────────────
 
@@ -45,11 +46,16 @@ export const createStory = async (authorId, { title, description, genreIds, stat
       is_published: status === 'ongoing' || status === 'completed',
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     const err = new Error(error.message);
     err.statusCode = 500;
+    throw err;
+  }
+  if (!story) {
+    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = 404;
     throw err;
   }
 
@@ -81,9 +87,14 @@ export const getStoryDetail = async (authorId, storyId) => {
     `)
     .eq('id', storyId)
     .eq('author_id', authorId)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
+    const err = new Error(error.message);
+    err.statusCode = 500;
+    throw err;
+  }
+  if (!data) {
     const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
     err.statusCode = 404;
     throw err;
@@ -120,6 +131,11 @@ export const updateStory = async (authorId, storyId, { title, description, genre
   }
 
   if (genreIds && Array.isArray(genreIds)) {
+    if (genreIds.length === 0) {
+      const err = new Error('Truyện phải có ít nhất một thể loại');
+      err.statusCode = 400;
+      throw err;
+    }
     const { error: delError } = await supabase.from('story_genres').delete().eq('story_id', storyId);
     if (delError) {
       const err = new Error(`Failed to clear old genres: ${delError.message}`);
@@ -128,11 +144,13 @@ export const updateStory = async (authorId, storyId, { title, description, genre
     }
     const uniqueGenreIds = [...new Set(genreIds)];
     const storyGenres = uniqueGenreIds.map((gId) => ({ story_id: storyId, genre_id: gId }));
-    const { error: insError } = await supabase.from('story_genres').insert(storyGenres);
-    if (insError) {
-      const err = new Error(`Failed to update genres: ${insError.message}`);
-      err.statusCode = 500;
-      throw err;
+    if (storyGenres.length > 0) {
+      const { error: insError } = await supabase.from('story_genres').insert(storyGenres);
+      if (insError) {
+        const err = new Error(`Failed to update genres: ${insError.message}`);
+        err.statusCode = 500;
+        throw err;
+      }
     }
   }
 
@@ -225,9 +243,14 @@ export const getAuthorChapters = async (authorId, storyId) => {
     .select('id')
     .eq('id', storyId)
     .eq('author_id', authorId)
-    .single();
+    .maybeSingle();
 
-  if (storyError || !story) {
+  if (storyError) {
+    const err = new Error(storyError.message);
+    err.statusCode = 500;
+    throw err;
+  }
+  if (!story) {
     const err = new Error('Truyện không tồn tại hoặc không có quyền');
     err.statusCode = 404;
     throw err;
@@ -261,9 +284,14 @@ export const createChapter = async (authorId, storyId, { title, content, status 
     .select('id')
     .eq('id', storyId)
     .eq('author_id', authorId)
-    .single();
+    .maybeSingle();
 
-  if (storyError || !story) {
+  if (storyError) {
+    const err = new Error(storyError.message);
+    err.statusCode = 500;
+    throw err;
+  }
+  if (!story) {
     const err = new Error('Truyện không tồn tại hoặc không có quyền');
     err.statusCode = 404;
     throw err;
@@ -282,7 +310,21 @@ export const createChapter = async (authorId, storyId, { title, content, status 
     chapterNumber = lastChapter ? lastChapter.chapter_number + 1 : 1;
   }
 
-  const plainText = content.replace(/<[^>]+>/g, '').trim();
+  const sanitizedContent = sanitizeHtml(content, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      img: ['src', 'alt']
+    }
+  });
+
+  if (sanitizedContent.length < 100) {
+    const err = new Error('Nội dung chương phải dài ít nhất 100 ký tự');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const plainText = sanitizedContent.replace(/<[^>]+>/g, '').trim();
   const wordCount = plainText ? plainText.split(/\s+/).length : 0;
   const isPublished = status === 'published';
   const publishedAt = isPublished ? new Date().toISOString() : null;
@@ -292,7 +334,7 @@ export const createChapter = async (authorId, storyId, { title, content, status 
     .insert({
       story_id: storyId,
       title,
-      content,
+      content: sanitizedContent,
       chapter_number: chapterNumber,
       status,
       is_published: isPublished,
@@ -319,11 +361,16 @@ export const getChapterDetail = async (authorId, storyId, chapterId) => {
     .select('id')
     .eq('id', storyId)
     .eq('author_id', authorId)
-    .single();
+    .maybeSingle();
     
-  if (storyError || !story) {
-    const err = new Error(storyError ? storyError.message : 'Truyện không tồn tại hoặc bạn không có quyền truy cập');
-    err.statusCode = storyError ? 500 : 403;
+  if (storyError) {
+    const err = new Error(storyError.message);
+    err.statusCode = 500;
+    throw err;
+  }
+  if (!story) {
+    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = 403;
     throw err;
   }
 
@@ -349,19 +396,36 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
     .select('id')
     .eq('id', storyId)
     .eq('author_id', authorId)
-    .single();
+    .maybeSingle();
     
-  if (storyError || !story) {
-    const err = new Error(storyError ? storyError.message : 'Truyện không tồn tại hoặc bạn không có quyền truy cập');
-    err.statusCode = storyError ? 500 : 403;
+  if (storyError) {
+    const err = new Error(storyError.message);
+    err.statusCode = 500;
+    throw err;
+  }
+  if (!story) {
+    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = 403;
     throw err;
   }
 
   const updates = { updated_at: new Date().toISOString() };
   if (title) updates.title = title;
   if (content) {
-    updates.content = content;
-    const plainText = content.replace(/<[^>]+>/g, '').trim();
+    const sanitizedContent = sanitizeHtml(content, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+      allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        img: ['src', 'alt']
+      }
+    });
+    if (sanitizedContent.length < 100) {
+      const err = new Error('Nội dung chương phải dài ít nhất 100 ký tự');
+      err.statusCode = 400;
+      throw err;
+    }
+    updates.content = sanitizedContent;
+    const plainText = sanitizedContent.replace(/<[^>]+>/g, '').trim();
     updates.word_count = plainText ? plainText.split(/\s+/).length : 0;
   }
   if (status) {
@@ -395,11 +459,16 @@ export const deleteChapter = async (authorId, storyId, chapterId) => {
     .select('id')
     .eq('id', storyId)
     .eq('author_id', authorId)
-    .single();
+    .maybeSingle();
     
-  if (storyError || !story) {
-    const err = new Error(storyError ? storyError.message : 'Truyện không tồn tại hoặc bạn không có quyền truy cập');
-    err.statusCode = storyError ? 500 : 403;
+  if (storyError) {
+    const err = new Error(storyError.message);
+    err.statusCode = 500;
+    throw err;
+  }
+  if (!story) {
+    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = 403;
     throw err;
   }
 

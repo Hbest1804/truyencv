@@ -4,6 +4,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { authorApi } from '@/services/authorApi';
 import { ArrowLeft, Save, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 
+const GENRES = [
+  { id: 1, label: 'Tiên Hiệp' },
+  { id: 2, label: 'Kiếm Hiệp' },
+  { id: 3, label: 'Huyền Huyễn' },
+  { id: 4, label: 'Ngôn Tình' },
+  { id: 5, label: 'Đô Thị' },
+  { id: 6, label: 'Võng Du' },
+  { id: 7, label: 'Fantasy' },
+  { id: 8, label: 'Sci-Fi' },
+  { id: 9, label: 'Mystery' },
+];
+
 export function AuthorStoryEdit() {
   const navigate = useNavigate();
   const { storyId } = useParams();
@@ -84,9 +96,13 @@ export function AuthorStoryEdit() {
 
     // if genreIds empty, give a fake one for now to bypass db constraint if any, 
     // but we should ideally select it.
+    if (formData.genreIds.length === 0) {
+      alert('Vui lòng chọn ít nhất một thể loại');
+      return;
+    }
     const submitData = {
       ...formData,
-      genreIds: formData.genreIds.length > 0 ? formData.genreIds : [1], // fallback 1
+      genreIds: formData.genreIds,
     };
 
     try {
@@ -185,6 +201,36 @@ export function AuthorStoryEdit() {
                   <option value="completed">Hoàn thành</option>
                   <option value="paused">Tạm dừng</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">Thể loại <span className="text-red-500">*</span></label>
+                <div className="flex flex-wrap gap-2">
+                  {GENRES.map(genre => {
+                    const isSelected = formData.genreIds.includes(genre.id);
+                    return (
+                      <button
+                        type="button"
+                        key={genre.id}
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            genreIds: isSelected 
+                              ? prev.genreIds.filter(id => id !== genre.id)
+                              : [...prev.genreIds, genre.id]
+                          }));
+                        }}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                          isSelected 
+                            ? 'bg-primary/20 border-primary text-primary' 
+                            : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {genre.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>

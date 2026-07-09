@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { authorApi } from '@/services/authorApi';
-import { BookOpen, Edit, Trash2, Plus, AlertCircle, Eye, Settings } from 'lucide-react';
+import { BookOpen, Edit, Trash2, Plus, AlertCircle, Eye, Settings, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function AuthorDashboard() {
@@ -43,7 +43,7 @@ export function AuthorDashboard() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center"><span className="animate-spin text-primary inline-block mr-2">C</span> Đang tải...</div>;
+  if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-primary" /></div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
