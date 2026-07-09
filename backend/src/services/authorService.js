@@ -470,9 +470,17 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
       err.statusCode = 400;
       throw err;
     }
+    const { data: existingChapter } = await supabase
+      .from('chapters')
+      .select('published_at')
+      .eq('id', chapterId)
+      .eq('story_id', storyId)
+      .maybeSingle();
     updates.status = status;
     updates.is_published = status === 'published';
-    updates.published_at = updates.is_published ? new Date().toISOString() : null;
+    updates.published_at = updates.is_published
+      ? ((existingChapter && existingChapter.published_at) || new Date().toISOString())
+      : null;
   }
 
   if (title) {
