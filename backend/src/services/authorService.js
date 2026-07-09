@@ -126,7 +126,8 @@ export const updateStory = async (authorId, storyId, { title, description, genre
       err.statusCode = 500;
       throw err;
     }
-    const storyGenres = genreIds.map((gId) => ({ story_id: storyId, genre_id: gId }));
+    const uniqueGenreIds = [...new Set(genreIds)];
+    const storyGenres = uniqueGenreIds.map((gId) => ({ story_id: storyId, genre_id: gId }));
     const { error: insError } = await supabase.from('story_genres').insert(storyGenres);
     if (insError) {
       const err = new Error(`Failed to update genres: ${insError.message}`);
@@ -313,16 +314,16 @@ export const createChapter = async (authorId, storyId, { title, content, status 
 
 export const getChapterDetail = async (authorId, storyId, chapterId) => {
   // Verify story ownership implicitly via the join or direct query
-  const { data: story } = await supabase
+  const { data: story, error: storyError } = await supabase
     .from('stories')
     .select('id')
     .eq('id', storyId)
     .eq('author_id', authorId)
     .single();
     
-  if (!story) {
-    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
-    err.statusCode = 403;
+  if (storyError || !story) {
+    const err = new Error(storyError ? storyError.message : 'Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = storyError ? 500 : 403;
     throw err;
   }
 
@@ -343,16 +344,16 @@ export const getChapterDetail = async (authorId, storyId, chapterId) => {
 };
 
 export const updateChapter = async (authorId, storyId, chapterId, { title, content, status, scheduledAt, number }) => {
-  const { data: story } = await supabase
+  const { data: story, error: storyError } = await supabase
     .from('stories')
     .select('id')
     .eq('id', storyId)
     .eq('author_id', authorId)
     .single();
     
-  if (!story) {
-    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
-    err.statusCode = 403;
+  if (storyError || !story) {
+    const err = new Error(storyError ? storyError.message : 'Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = storyError ? 500 : 403;
     throw err;
   }
 
@@ -389,16 +390,16 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
 };
 
 export const deleteChapter = async (authorId, storyId, chapterId) => {
-  const { data: story } = await supabase
+  const { data: story, error: storyError } = await supabase
     .from('stories')
     .select('id')
     .eq('id', storyId)
     .eq('author_id', authorId)
     .single();
     
-  if (!story) {
-    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
-    err.statusCode = 403;
+  if (storyError || !story) {
+    const err = new Error(storyError ? storyError.message : 'Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = storyError ? 500 : 403;
     throw err;
   }
 

@@ -13,7 +13,6 @@ export function AuthorStoryEdit() {
   
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
-  const [genres, setGenres] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -58,7 +57,7 @@ export function AuthorStoryEdit() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || isNew) return; // Need to create story first to upload cover, or we can handle it differently.
+    if (!file) return;
     
     if (isNew) {
       alert('Vui lòng tạo truyện trước khi upload ảnh bìa');

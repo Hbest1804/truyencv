@@ -46,6 +46,7 @@ export function AuthorChapterEdit() {
         number: chapter.chapter_number?.toString() || '',
         scheduledAt: chapter.scheduled_at ? (() => {
           const d = new Date(chapter.scheduled_at);
+          if (isNaN(d.getTime())) return '';
           return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
         })() : '',
       });
@@ -89,6 +90,8 @@ export function AuthorChapterEdit() {
       }
       submitData.scheduledAt = new Date(formData.scheduledAt).toISOString();
       submitData.status = 'draft'; // Should be draft until scheduled time comes, or handle via cron.
+    } else {
+      submitData.scheduledAt = null;
     }
 
     try {
