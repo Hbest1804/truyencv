@@ -22,6 +22,13 @@ export const getAuthorStories = async (authorId) => {
 };
 
 export const createStory = async (authorId, { title, description, genreIds, status = 'draft' }) => {
+  const allowedStatuses = ['draft', 'ongoing', 'completed', 'paused'];
+  if (status && !allowedStatuses.includes(status)) {
+    const err = new Error('Trạng thái truyện không hợp lệ');
+    err.statusCode = 400;
+    throw err;
+  }
+
   if (!title || !description || !genreIds || !Array.isArray(genreIds) || genreIds.length === 0) {
     const err = new Error('Thiếu thông tin bắt buộc (title, description, genreIds)');
     err.statusCode = 400;
@@ -107,6 +114,13 @@ export const getStoryDetail = async (authorId, storyId) => {
 };
 
 export const updateStory = async (authorId, storyId, { title, description, genreIds, status }) => {
+  const allowedStatuses = ['draft', 'ongoing', 'completed', 'paused'];
+  if (status && !allowedStatuses.includes(status)) {
+    const err = new Error('Trạng thái truyện không hợp lệ');
+    err.statusCode = 400;
+    throw err;
+  }
+
   const updates = {};
   if (title) updates.title = title;
   if (description) updates.description = description;
@@ -136,6 +150,19 @@ export const updateStory = async (authorId, storyId, { title, description, genre
       err.statusCode = 400;
       throw err;
     }
+
+    // Fetch existing genres first to restore them in case of failure
+    const { data: oldGenres, error: fetchError } = await supabase
+      .from('story_genres')
+      .select('genre_id')
+      .eq('story_id', storyId);
+
+    if (fetchError) {
+      const err = new Error(`Failed to fetch existing genres: ${fetchError.message}`);
+      err.statusCode = 500;
+      throw err;
+    }
+
     const { error: delError } = await supabase.from('story_genres').delete().eq('story_id', storyId);
     if (delError) {
       const err = new Error(`Failed to clear old genres: ${delError.message}`);
@@ -147,6 +174,11 @@ export const updateStory = async (authorId, storyId, { title, description, genre
     if (storyGenres.length > 0) {
       const { error: insError } = await supabase.from('story_genres').insert(storyGenres);
       if (insError) {
+        // Restore old genres to maintain database consistency
+        if (oldGenres && oldGenres.length > 0) {
+          const restoreGenres = oldGenres.map((og) => ({ story_id: storyId, genre_id: og.genre_id }));
+          await supabase.from('story_genres').insert(restoreGenres);
+        }
         const err = new Error(`Failed to update genres: ${insError.message}`);
         err.statusCode = 500;
         throw err;
@@ -278,6 +310,34 @@ export const createChapter = async (authorId, storyId, { title, content, status 
     throw err;
   }
 
+  const allowedStatuses = ['draft', 'published'];
+  if (status && !allowedStatuses.includes(status)) {
+    const err = new Error('Trạng thái chương không hợp lệ');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (title.trim().length > 200) {
+    const err = new Error('Tiêu đề chương không được vượt quá 200 ký tự');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (content.trim().length < 100) {
+    const err = new Error('Nội dung chương phải dài ít nhất 100 ký tự');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (number !== undefined && number !== null) {
+    const parsedNumber = parseInt(number, 10);
+    if (isNaN(parsedNumber) || parsedNumber <= 0) {
+      const err = new Error('Số chương phải là số nguyên dương');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
   // Check ownership
   const { data: story, error: storyError } = await supabase
     .from('stories')
@@ -318,11 +378,6 @@ export const createChapter = async (authorId, storyId, { title, content, status 
     }
   });
 
-  if (sanitizedContent.length < 100) {
-    const err = new Error('Nội dung chương phải dài ít nhất 100 ký tự');
-    err.statusCode = 400;
-    throw err;
-  }
 
   const plainText = sanitizedContent.replace(/<[^>]+>/g, '').trim();
   const wordCount = plainText ? plainText.split(/\s+/).length : 0;
@@ -363,14 +418,9 @@ export const getChapterDetail = async (authorId, storyId, chapterId) => {
     .eq('author_id', authorId)
     .maybeSingle();
     
-  if (storyError) {
-    const err = new Error(storyError.message);
-    err.statusCode = 500;
-    throw err;
-  }
-  if (!story) {
-    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
-    err.statusCode = 403;
+  if (storyError || !story) {
+    const err = new Error(storyError ? 'Lỗi kết nối cơ sở dữ liệu' : 'Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = storyError ? 500 : 404;
     throw err;
   }
 
@@ -398,20 +448,41 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
     .eq('author_id', authorId)
     .maybeSingle();
     
-  if (storyError) {
-    const err = new Error(storyError.message);
-    err.statusCode = 500;
-    throw err;
-  }
-  if (!story) {
-    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
-    err.statusCode = 403;
+  if (storyError || !story) {
+    const err = new Error(storyError ? 'Lỗi kết nối cơ sở dữ liệu' : 'Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = storyError ? 500 : 404;
     throw err;
   }
 
   const updates = { updated_at: new Date().toISOString() };
-  if (title) updates.title = title;
+  
+  if (status) {
+    const allowedStatuses = ['draft', 'published'];
+    if (!allowedStatuses.includes(status)) {
+      const err = new Error('Trạng thái chương không hợp lệ');
+      err.statusCode = 400;
+      throw err;
+    }
+    updates.status = status;
+    updates.is_published = status === 'published';
+    updates.published_at = updates.is_published ? new Date().toISOString() : null;
+  }
+
+  if (title) {
+    if (title.trim().length > 200) {
+      const err = new Error('Tiêu đề chương không được vượt quá 200 ký tự');
+      err.statusCode = 400;
+      throw err;
+    }
+    updates.title = title;
+  }
+
   if (content) {
+    if (content.trim().length < 100) {
+      const err = new Error('Nội dung chương phải dài ít nhất 100 ký tự');
+      err.statusCode = 400;
+      throw err;
+    }
     const sanitizedContent = sanitizeHtml(content, {
       allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
       allowedAttributes: {
@@ -419,22 +490,22 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
         img: ['src', 'alt']
       }
     });
-    if (sanitizedContent.length < 100) {
-      const err = new Error('Nội dung chương phải dài ít nhất 100 ký tự');
-      err.statusCode = 400;
-      throw err;
-    }
     updates.content = sanitizedContent;
     const plainText = sanitizedContent.replace(/<[^>]+>/g, '').trim();
     updates.word_count = plainText ? plainText.split(/\s+/).length : 0;
   }
-  if (status) {
-    updates.status = status;
-    updates.is_published = status === 'published';
-    updates.published_at = updates.is_published ? new Date().toISOString() : null;
-  }
+
   if (scheduledAt !== undefined) updates.scheduled_at = scheduledAt;
-  if (number !== undefined) updates.chapter_number = number;
+  
+  if (number !== undefined && number !== null) {
+    const parsedNumber = parseInt(number, 10);
+    if (isNaN(parsedNumber) || parsedNumber <= 0) {
+      const err = new Error('Số chương phải là số nguyên dương');
+      err.statusCode = 400;
+      throw err;
+    }
+    updates.chapter_number = parsedNumber;
+  }
 
   const { data, error } = await supabase
     .from('chapters')
@@ -461,14 +532,9 @@ export const deleteChapter = async (authorId, storyId, chapterId) => {
     .eq('author_id', authorId)
     .maybeSingle();
     
-  if (storyError) {
-    const err = new Error(storyError.message);
-    err.statusCode = 500;
-    throw err;
-  }
-  if (!story) {
-    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
-    err.statusCode = 403;
+  if (storyError || !story) {
+    const err = new Error(storyError ? 'Lỗi kết nối cơ sở dữ liệu' : 'Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = storyError ? 500 : 404;
     throw err;
   }
 
