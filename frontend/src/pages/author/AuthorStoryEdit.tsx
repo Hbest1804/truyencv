@@ -76,6 +76,17 @@ export function AuthorStoryEdit() {
       return;
     }
 
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Định dạng file không hợp lệ. Chỉ chấp nhận JPEG, PNG, WEBP, GIF.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Kích thước file không được vượt quá 5MB.');
+      return;
+    }
+
     try {
       setSaving(true);
       const res = await authorApi.uploadStoryCover(storyId as string, file);

@@ -201,6 +201,19 @@ export const updateStory = async (authorId, storyId, { title, description, genre
 };
 
 export const deleteStory = async (authorId, storyId) => {
+  const { data: story, error: fetchError } = await supabase
+    .from('stories')
+    .select('cover_url')
+    .eq('id', storyId)
+    .eq('author_id', authorId)
+    .maybeSingle();
+
+  if (fetchError) {
+    const err = new Error(fetchError.message);
+    err.statusCode = 500;
+    throw err;
+  }
+
   const { error } = await supabase
     .from('stories')
     .delete()
@@ -212,6 +225,18 @@ export const deleteStory = async (authorId, storyId) => {
     err.statusCode = 500;
     throw err;
   }
+
+  if (story && story.cover_url) {
+    try {
+      const urlParts = story.cover_url.split('/covers/');
+      if (urlParts.length > 1) {
+        await supabase.storage.from('covers').remove([urlParts[1]]);
+      }
+    } catch (err) {
+      console.error('Failed to delete cover from storage:', err);
+    }
+  }
+
   return true;
 };
 
@@ -223,7 +248,7 @@ export const uploadStoryCover = async (authorId, storyId, fileBuffer, mimeType) 
   // Verify story ownership first to prevent unauthorized uploads
   const { data: storyCheck, error: checkError } = await supabase
     .from('stories')
-    .select('id')
+    .select('id, cover_url')
     .eq('id', storyId)
     .eq('author_id', authorId)
     .maybeSingle();
@@ -261,6 +286,18 @@ export const uploadStoryCover = async (authorId, storyId, fileBuffer, mimeType) 
 
   const { data: publicUrlData } = supabase.storage.from('covers').getPublicUrl(filePath);
   const coverUrl = publicUrlData.publicUrl;
+
+  // Delete old cover to prevent storage leaks
+  if (storyCheck && storyCheck.cover_url) {
+    try {
+      const urlParts = storyCheck.cover_url.split('/covers/');
+      if (urlParts.length > 1) {
+        await supabase.storage.from('covers').remove([urlParts[1]]);
+      }
+    } catch (err) {
+      console.error('Failed to delete old cover:', err);
+    }
+  }
 
   const { data: story, error: updateError } = await supabase
     .from('stories')
@@ -399,7 +436,7 @@ export const createChapter = async (authorId, storyId, { title, content, status 
   });
 
 
-  const plainText = sanitizedContent.replace(/<[^>]+>/g, '').trim();
+  const plainText = sanitizedContent.replace(/<[^>]+>/g, ' ').trim();
   const wordCount = plainText ? plainText.split(/\s+/).length : 0;
   const isPublished = status === 'published';
   const publishedAt = isPublished ? new Date().toISOString() : null;
@@ -525,7 +562,7 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
       }
     });
     updates.content = sanitizedContent;
-    const plainText = sanitizedContent.replace(/<[^>]+>/g, '').trim();
+    const plainText = sanitizedContent.replace(/<[^>]+>/g, ' ').trim();
     updates.word_count = plainText ? plainText.split(/\s+/).length : 0;
   }
 

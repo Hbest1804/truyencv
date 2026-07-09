@@ -88,7 +88,12 @@ export function AuthorChapterEdit() {
         alert("Vui lòng chọn thời gian lên lịch đăng");
         return;
       }
-      submitData.scheduledAt = new Date(formData.scheduledAt).toISOString();
+      const scheduledDate = new Date(formData.scheduledAt);
+      if (scheduledDate <= new Date()) {
+        alert("Thời gian lên lịch phải ở trong tương lai");
+        return;
+      }
+      submitData.scheduledAt = scheduledDate.toISOString();
       submitData.status = 'draft'; // Should be draft until scheduled time comes, or handle via cron.
     } else {
       submitData.scheduledAt = null;
