@@ -6,9 +6,11 @@ import { errorMiddleware } from './middlewares/errorMiddleware.js';
 const app = express();
 
 // Cấu hình CORS
-const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
 app.use(cors({
-  origin: corsOrigin,
+  origin: function (origin, callback) {
+    // Chấp nhận mọi origin (domain) để không bị lỗi CORS khi deploy Vercel
+    callback(null, true);
+  },
   credentials: true
 }));
 
