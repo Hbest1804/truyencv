@@ -6,11 +6,9 @@ import { errorMiddleware } from './middlewares/errorMiddleware.js';
 const app = express();
 
 // Cấu hình CORS
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
 app.use(cors({
-  origin: function (origin, callback) {
-    // Chấp nhận mọi origin (domain) để không bị lỗi CORS khi deploy Vercel
-    callback(null, true);
-  },
+  origin: corsOrigin,
   credentials: true
 }));
 
@@ -24,7 +22,7 @@ app.get('/', (req, res) => {
 });
 
 // Định tuyến API chính
-app.use('/api', routes);
+app.use('/', routes);
 
 // Route mặc định cho các request không hợp lệ (404 Not Found)
 app.use((req, res, next) => {
