@@ -113,7 +113,7 @@ export function AuthorChapters() {
                     </h3>
                   </div>
                   
-                  <div className="flex items-center gap-4 text-xs mt-2 pl-15">
+                  <div className="flex items-center gap-4 text-xs mt-2 pl-[3.75rem]">
                     {chapter.is_published ? (
                       <span className="text-green-400 flex items-center gap-1 bg-green-400/10 px-2 py-0.5 rounded">
                         <CheckCircle size={12} /> Đã xuất bản

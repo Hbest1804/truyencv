@@ -53,7 +53,8 @@ export const createStory = async (authorId, { title, description, genreIds, stat
     throw err;
   }
 
-  const storyGenres = genreIds.map((gId) => ({ story_id: story.id, genre_id: gId }));
+  const uniqueGenreIds = [...new Set(genreIds)];
+  const storyGenres = uniqueGenreIds.map((gId) => ({ story_id: story.id, genre_id: gId }));
   const { error: sgError } = await supabase.from('story_genres').insert(storyGenres);
 
   if (sgError) {
@@ -157,6 +158,20 @@ export const changeStoryStatus = async (authorId, storyId, status) => {
 };
 
 export const uploadStoryCover = async (authorId, storyId, fileBuffer, mimeType, originalName) => {
+  // Verify story ownership first to prevent unauthorized uploads
+  const { data: storyCheck, error: checkError } = await supabase
+    .from('stories')
+    .select('id')
+    .eq('id', storyId)
+    .eq('author_id', authorId)
+    .maybeSingle();
+
+  if (checkError || !storyCheck) {
+    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = checkError ? 500 : 404;
+    throw err;
+  }
+
   // Map mimeType to extension to prevent path traversal via client-controlled originalName
   const mimeToExt = {
     'image/jpeg': 'jpg',
@@ -233,6 +248,12 @@ export const getAuthorChapters = async (authorId, storyId) => {
 };
 
 export const createChapter = async (authorId, storyId, { title, content, status = 'draft', scheduledAt, number }) => {
+  if (!title || !content) {
+    const err = new Error('Thiếu thông tin bắt buộc (title, content)');
+    err.statusCode = 400;
+    throw err;
+  }
+
   // Check ownership
   const { data: story, error: storyError } = await supabase
     .from('stories')
@@ -299,7 +320,11 @@ export const getChapterDetail = async (authorId, storyId, chapterId) => {
     .eq('author_id', authorId)
     .single();
     
-  if (!story) throw new Error('Unauthorized');
+  if (!story) {
+    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = 403;
+    throw err;
+  }
 
   const { data, error } = await supabase
     .from('chapters')
@@ -325,7 +350,11 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
     .eq('author_id', authorId)
     .single();
     
-  if (!story) throw new Error('Unauthorized');
+  if (!story) {
+    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = 403;
+    throw err;
+  }
 
   const updates = { updated_at: new Date().toISOString() };
   if (title) updates.title = title;
@@ -337,9 +366,7 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
   if (status) {
     updates.status = status;
     updates.is_published = status === 'published';
-    if (updates.is_published) {
-      updates.published_at = new Date().toISOString();
-    }
+    updates.published_at = updates.is_published ? new Date().toISOString() : null;
   }
   if (scheduledAt !== undefined) updates.scheduled_at = scheduledAt;
   if (number !== undefined) updates.chapter_number = number;
@@ -369,7 +396,11 @@ export const deleteChapter = async (authorId, storyId, chapterId) => {
     .eq('author_id', authorId)
     .single();
     
-  if (!story) throw new Error('Unauthorized');
+  if (!story) {
+    const err = new Error('Truyện không tồn tại hoặc bạn không có quyền truy cập');
+    err.statusCode = 403;
+    throw err;
+  }
 
   const { error } = await supabase
     .from('chapters')

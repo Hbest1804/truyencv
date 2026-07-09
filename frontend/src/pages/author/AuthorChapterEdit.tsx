@@ -82,7 +82,11 @@ export function AuthorChapterEdit() {
       submitData.number = parseInt(formData.number, 10);
     }
 
-    if (isScheduling && formData.scheduledAt) {
+    if (isScheduling) {
+      if (!formData.scheduledAt) {
+        alert("Vui lòng chọn thời gian lên lịch đăng");
+        return;
+      }
       submitData.scheduledAt = new Date(formData.scheduledAt).toISOString();
       submitData.status = 'draft'; // Should be draft until scheduled time comes, or handle via cron.
     }
