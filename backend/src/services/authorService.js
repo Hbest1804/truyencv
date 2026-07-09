@@ -37,7 +37,12 @@ export const createStory = async (authorId, { title, description, genreIds, stat
 
   let slug = generateSlug(title);
   // check duplicate slug
-  const { data: existSlug } = await supabase.from('stories').select('id').eq('slug', slug).maybeSingle();
+  const { data: existSlug, error: slugError } = await supabase.from('stories').select('id').eq('slug', slug).maybeSingle();
+  if (slugError) {
+    const err = new Error(slugError.message);
+    err.statusCode = 500;
+    throw err;
+  }
   if (existSlug) {
     slug = `${slug}-${Date.now()}`;
   }
@@ -214,7 +219,7 @@ export const changeStoryStatus = async (authorId, storyId, status) => {
   return updateStory(authorId, storyId, { status });
 };
 
-export const uploadStoryCover = async (authorId, storyId, fileBuffer, mimeType, originalName) => {
+export const uploadStoryCover = async (authorId, storyId, fileBuffer, mimeType) => {
   // Verify story ownership first to prevent unauthorized uploads
   const { data: storyCheck, error: checkError } = await supabase
     .from('stories')
@@ -266,7 +271,9 @@ export const uploadStoryCover = async (authorId, storyId, fileBuffer, mimeType, 
     .single();
 
   if (updateError) {
-    throw new Error(updateError.message);
+    const err = new Error(updateError.message);
+    err.statusCode = 500;
+    throw err;
   }
 
   return story;
@@ -367,13 +374,19 @@ export const createChapter = async (authorId, storyId, { title, content, status 
 
   // Calculate chapter_number if not provided
   if (chapterNumber === null) {
-    const { data: lastChapter } = await supabase
+    const { data: lastChapter, error: lastChapterError } = await supabase
       .from('chapters')
       .select('chapter_number')
       .eq('story_id', storyId)
       .order('chapter_number', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (lastChapterError) {
+      const err = new Error(lastChapterError.message);
+      err.statusCode = 500;
+      throw err;
+    }
     chapterNumber = lastChapter ? lastChapter.chapter_number + 1 : 1;
   }
 
@@ -470,12 +483,18 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
       err.statusCode = 400;
       throw err;
     }
-    const { data: existingChapter } = await supabase
+    const { data: existingChapter, error: existingChapterError } = await supabase
       .from('chapters')
       .select('published_at')
       .eq('id', chapterId)
       .eq('story_id', storyId)
       .maybeSingle();
+
+    if (existingChapterError) {
+      const err = new Error(existingChapterError.message);
+      err.statusCode = 500;
+      throw err;
+    }
     updates.status = status;
     updates.is_published = status === 'published';
     updates.published_at = updates.is_published

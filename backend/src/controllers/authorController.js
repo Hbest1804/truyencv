@@ -75,8 +75,7 @@ export const uploadStoryCover = async (req, res, next) => {
       req.user.id,
       req.params.storyId,
       req.file.buffer,
-      req.file.mimetype,
-      req.file.originalname
+      req.file.mimetype
     );
     res.json({ success: true, data: story });
   } catch (error) {

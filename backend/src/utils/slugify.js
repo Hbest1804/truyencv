@@ -1,4 +1,5 @@
 export const generateSlug = (text) => {
+  if (!text) return 'story';
   const slug = text
     .toString()
     .toLowerCase()
