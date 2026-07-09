@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { authorApi } from '@/services/authorApi';
-import api from '@/services/api';
 import { ArrowLeft, Save, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 
 export function AuthorStoryEdit() {
@@ -32,23 +31,6 @@ export function AuthorStoryEdit() {
       return;
     }
     
-    // Fetch genres for selection
-    api.get('/stories').then(res => {
-      // Actually we need genres list, let's assume there is an API for it or we hardcode. 
-      // Wait, there is /api/genres? Let's check backend routes if genres exist or just fetch them if available.
-      // Usually there is a public endpoint for genres. I will mock a few if not found, or try to fetch.
-    }).catch(() => {});
-    
-    const fetchGenres = async () => {
-      try {
-        // Fallback or generic endpoint
-        const { data } = await api.get('/stories'); // Just to get something if no genres API
-      } catch (e) {}
-    }
-    
-    // For now, let's hardcode some genres if we don't have a specific endpoint or just leave it.
-    // Assuming we have some genres in DB, we should fetch them. I will use a placeholder fetch.
-
     if (!isNew) {
       fetchStory();
     }

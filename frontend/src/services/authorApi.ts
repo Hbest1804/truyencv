@@ -1,53 +1,128 @@
-import api from './api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+function getAccessToken(): string | null {
+  const token = localStorage.getItem('supabase_access_token');
+  if (token) return token;
+  const storageStr = localStorage.getItem('sb-vydvcofnvhwoupbgsmyt-auth-token');
+  if (storageStr) {
+    try {
+      const storageObj = JSON.parse(storageStr);
+      return storageObj?.access_token || null;
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+}
+
+const getHeaders = (isFormData = false) => {
+  const token = getAccessToken();
+  const headers: HeadersInit = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+  return headers;
+};
+
+const handleResponse = async (res: Response) => {
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw { response: { data } };
+  }
+  return { data };
+};
 
 export const authorApi = {
-  // STORIES
-  getAuthorStories: () => api.get('/author/stories'),
+  getAuthorStories: () => 
+    fetch(`${API_BASE}/author/stories`, {
+      headers: getHeaders()
+    }).then(handleResponse),
   
   createStory: (data: { title: string; description: string; genreIds: number[]; status?: string }) => 
-    api.post('/author/stories', data),
+    fetch(`${API_BASE}/author/stories`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    }).then(handleResponse),
     
   getStoryDetail: (storyId: number | string) => 
-    api.get(`/author/stories/${storyId}`),
+    fetch(`${API_BASE}/author/stories/${storyId}`, {
+      headers: getHeaders()
+    }).then(handleResponse),
     
   updateStory: (storyId: number | string, data: any) => 
-    api.put(`/author/stories/${storyId}`, data),
+    fetch(`${API_BASE}/author/stories/${storyId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    }).then(handleResponse),
     
   deleteStory: (storyId: number | string) => 
-    api.delete(`/author/stories/${storyId}`),
+    fetch(`${API_BASE}/author/stories/${storyId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    }).then(handleResponse),
     
   changeStoryStatus: (storyId: number | string, status: string) => 
-    api.patch(`/author/stories/${storyId}/status`, { status }),
+    fetch(`${API_BASE}/author/stories/${storyId}/status`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ status })
+    }).then(handleResponse),
     
   uploadStoryCover: (storyId: number | string, file: File) => {
     const formData = new FormData();
     formData.append('cover', file);
-    return api.post(`/author/stories/${storyId}/cover`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    return fetch(`${API_BASE}/author/stories/${storyId}/cover`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: formData
+    }).then(handleResponse);
   },
 
-  // CHAPTERS
   getAuthorChapters: (storyId: number | string) => 
-    api.get(`/author/stories/${storyId}/chapters`),
+    fetch(`${API_BASE}/author/stories/${storyId}/chapters`, {
+      headers: getHeaders()
+    }).then(handleResponse),
     
   createChapter: (storyId: number | string, data: any) => 
-    api.post(`/author/stories/${storyId}/chapters`, data),
+    fetch(`${API_BASE}/author/stories/${storyId}/chapters`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    }).then(handleResponse),
     
   getChapterDetail: (storyId: number | string, chapterId: number | string) => 
-    api.get(`/author/stories/${storyId}/chapters/${chapterId}`),
+    fetch(`${API_BASE}/author/stories/${storyId}/chapters/${chapterId}`, {
+      headers: getHeaders()
+    }).then(handleResponse),
     
   updateChapter: (storyId: number | string, chapterId: number | string, data: any) => 
-    api.put(`/author/stories/${storyId}/chapters/${chapterId}`, data),
+    fetch(`${API_BASE}/author/stories/${storyId}/chapters/${chapterId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    }).then(handleResponse),
     
   deleteChapter: (storyId: number | string, chapterId: number | string) => 
-    api.delete(`/author/stories/${storyId}/chapters/${chapterId}`),
+    fetch(`${API_BASE}/author/stories/${storyId}/chapters/${chapterId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    }).then(handleResponse),
     
   publishChapter: (storyId: number | string, chapterId: number | string) => 
-    api.patch(`/author/stories/${storyId}/chapters/${chapterId}/publish`),
+    fetch(`${API_BASE}/author/stories/${storyId}/chapters/${chapterId}/publish`, {
+      method: 'PATCH',
+      headers: getHeaders()
+    }).then(handleResponse),
     
   scheduleChapter: (storyId: number | string, chapterId: number | string, scheduledAt: string) => 
-    api.patch(`/author/stories/${storyId}/chapters/${chapterId}/schedule`, { scheduledAt }),
+    fetch(`${API_BASE}/author/stories/${storyId}/chapters/${chapterId}/schedule`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ scheduledAt })
+    }).then(handleResponse),
 };
