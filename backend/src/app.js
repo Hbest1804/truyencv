@@ -16,6 +16,11 @@ app.use(cors({
 app.use(express.json({ limit: '4mb' }));
 app.use(express.urlencoded({ limit: '4mb', extended: true }));
 
+// Health check route cho Render (ngăn lỗi 404 khi vào đường dẫn gốc)
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'TruyenCV API is running' });
+});
+
 // Định tuyến API chính
 app.use('/api', routes);
 
