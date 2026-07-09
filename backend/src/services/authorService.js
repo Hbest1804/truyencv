@@ -381,8 +381,8 @@ export const createChapter = async (authorId, storyId, { title, content, status 
 
   let chapterNumber = null;
   if (number !== undefined && number !== null) {
-    const parsedNumber = parseInt(number, 10);
-    if (isNaN(parsedNumber) || parsedNumber <= 0) {
+    const parsedNumber = Number(number);
+    if (!Number.isInteger(parsedNumber) || parsedNumber <= 0) {
       const err = new Error('Số chương phải là số nguyên dương');
       err.statusCode = 400;
       throw err;
@@ -569,8 +569,8 @@ export const updateChapter = async (authorId, storyId, chapterId, { title, conte
   if (scheduledAt !== undefined) updates.scheduled_at = scheduledAt;
   
   if (number !== undefined && number !== null) {
-    const parsedNumber = parseInt(number, 10);
-    if (isNaN(parsedNumber) || parsedNumber <= 0) {
+    const parsedNumber = Number(number);
+    if (!Number.isInteger(parsedNumber) || parsedNumber <= 0) {
       const err = new Error('Số chương phải là số nguyên dương');
       err.statusCode = 400;
       throw err;
