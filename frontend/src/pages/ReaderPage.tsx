@@ -12,7 +12,7 @@ type ReaderSpacing = 'tight' | 'normal' | 'relaxed';
 export function ReaderPage() {
   const { storyId, chapterId } = useParams<{ storyId: string; chapterId: string }>();
   const navigate = useNavigate();
-  
+
   const [readingProgress, setReadingProgress] = useState(0);
   const [theme, setTheme] = useState<ReaderTheme>('sepia');
   const [font, setFont] = useState<ReaderFont>('serif');
@@ -91,19 +91,19 @@ export function ReaderPage() {
 
   const themeClasses: Record<ReaderTheme, string> = {
     // ── Sáng ──
-    sepia:    'bg-[#fdf6e3] text-[#4a3728]',
-    warm:     'bg-[#f5f0e8] text-[#2c2017]',
-    white:    'bg-[#ffffff] text-[#111111]',
-    light:    'bg-[#f9f9f9] text-[#18181b]',
+    sepia: 'bg-[#fdf6e3] text-[#4a3728]',
+    warm: 'bg-[#f5f0e8] text-[#2c2017]',
+    white: 'bg-[#ffffff] text-[#111111]',
+    light: 'bg-[#f9f9f9] text-[#18181b]',
     // ── Pastel ──
-    rose:     'bg-[#fff0f3] text-[#5c1a2e]',
+    rose: 'bg-[#fff0f3] text-[#5c1a2e]',
     lavender: 'bg-[#f3f0ff] text-[#3b2f6e]',
-    mint:     'bg-[#edfaf4] text-[#1a4a35]',
+    mint: 'bg-[#edfaf4] text-[#1a4a35]',
     // ── Tối ──
-    dark:     'bg-[#12141a] text-[#e8eaf0]',
-    nordic:   'bg-[#1e2536] text-[#dde3f0]',
-    forest:   'bg-[#142920] text-[#cce8d8]',
-    ocean:    'bg-[#0b1e2d] text-[#c8e0f0]',
+    dark: 'bg-[#12141a] text-[#e8eaf0]',
+    nordic: 'bg-[#1e2536] text-[#dde3f0]',
+    forest: 'bg-[#142920] text-[#cce8d8]',
+    ocean: 'bg-[#0b1e2d] text-[#c8e0f0]',
   };
 
   // Header/footer dùng glass-panel tối giống Home page — không phụ thuộc vào theme đọc
@@ -172,7 +172,7 @@ export function ReaderPage() {
             <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
             <span className="hidden sm:inline font-bold text-sm">Trở lại</span>
           </button>
-          
+
           <div className="flex flex-col items-center text-center max-w-[200px] md:max-w-md">
             <h1 className={`font-bold truncate text-xs md:text-sm font-display ${barText}`}>
               Chương {activeChapter.chapter_number}: {activeChapter.title}
@@ -181,7 +181,7 @@ export function ReaderPage() {
               {story?.title || 'Đang tải truyện...'}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setChaptersDrawerOpen(!chaptersDrawerOpen)}
@@ -216,7 +216,7 @@ export function ReaderPage() {
           <h2 className="text-2xl md:text-3xl font-bold mb-8 font-display text-current opacity-90 border-b border-current/10 pb-5">
             {activeChapter.title}
           </h2>
-          
+
           <div className="font-medium">
             {(activeChapter.content || '')
               .replace(/<br\s*\/?>/gi, '\n')
@@ -269,32 +269,31 @@ export function ReaderPage() {
                 <div className="grid grid-cols-4 gap-2">
                   {([
                     // Sáng
-                    { id: 'sepia',    label: 'Cổ điển',    bg: '#fdf6e3', border: '#c8b87a' },
-                    { id: 'warm',     label: 'Kem',         bg: '#f5f0e8', border: '#c4b8a8' },
-                    { id: 'white',    label: 'Trắng',       bg: '#ffffff', border: '#cccccc' },
-                    { id: 'light',    label: 'Xám nhạt',    bg: '#f9f9f9', border: '#d4d4d4' },
+                    { id: 'sepia', label: 'Cổ điển', bg: '#fdf6e3', border: '#c8b87a' },
+                    { id: 'warm', label: 'Kem', bg: '#f5f0e8', border: '#c4b8a8' },
+                    { id: 'white', label: 'Trắng', bg: '#ffffff', border: '#cccccc' },
+                    { id: 'light', label: 'Xám nhạt', bg: '#f9f9f9', border: '#d4d4d4' },
                     // Pastel
-                    { id: 'rose',     label: 'Hồng',        bg: '#fff0f3', border: '#f4a0b5' },
-                    { id: 'lavender', label: 'Oải hương',   bg: '#f3f0ff', border: '#bbaef5' },
-                    { id: 'mint',     label: 'Bạc hà',      bg: '#edfaf4', border: '#7ed3a8' },
+                    { id: 'rose', label: 'Hồng', bg: '#fff0f3', border: '#f4a0b5' },
+                    { id: 'lavender', label: 'Oải hương', bg: '#f3f0ff', border: '#bbaef5' },
+                    { id: 'mint', label: 'Bạc hà', bg: '#edfaf4', border: '#7ed3a8' },
                     // Tối
-                    { id: 'dark',     label: 'Đêm',         bg: '#12141a', border: '#3a3f52' },
-                    { id: 'nordic',   label: 'Bắc Âu',      bg: '#1e2536', border: '#4a5580' },
-                    { id: 'forest',   label: 'Rừng',        bg: '#142920', border: '#2a5a3a' },
-                    { id: 'ocean',    label: 'Đại dương',   bg: '#0b1e2d', border: '#1a4a6e' },
+                    { id: 'dark', label: 'Đêm', bg: '#12141a', border: '#3a3f52' },
+                    { id: 'nordic', label: 'Bắc Âu', bg: '#1e2536', border: '#4a5580' },
+                    { id: 'forest', label: 'Rừng', bg: '#142920', border: '#2a5a3a' },
+                    { id: 'ocean', label: 'Đại dương', bg: '#0b1e2d', border: '#1a4a6e' },
                   ] as { id: ReaderTheme; label: string; bg: string; border: string }[]).map(t => {
                     const active = theme === t.id;
-                    const isLight = ['sepia','warm','white','light','rose','lavender','mint'].includes(t.id);
+                    const isLight = ['sepia', 'warm', 'white', 'light', 'rose', 'lavender', 'mint'].includes(t.id);
                     return (
                       <button
                         key={t.id}
                         onClick={() => setTheme(t.id)}
                         title={t.label}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer ${
-                          active
-                            ? 'border-secondary shadow-[0_0_0_2px_rgba(6,182,212,0.35)] scale-105'
-                            : isDarkTheme ? 'border-white/10 hover:border-white/30 hover:scale-105' : 'border-black/10 hover:border-black/25 hover:scale-105'
-                        }`}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer ${active
+                          ? 'border-secondary shadow-[0_0_0_2px_rgba(6,182,212,0.35)] scale-105'
+                          : isDarkTheme ? 'border-white/10 hover:border-white/30 hover:scale-105' : 'border-black/10 hover:border-black/25 hover:scale-105'
+                          }`}
                       >
                         <div
                           className="w-8 h-8 rounded-full mb-1.5 shadow-sm"
@@ -319,11 +318,10 @@ export function ReaderPage() {
                     <button
                       key={f.id}
                       onClick={() => setFont(f.id)}
-                      className={`py-2 px-3 rounded-xl border text-center transition-all cursor-pointer text-xs font-semibold ${f.fontClass} ${
-                        font === f.id
-                          ? 'border-secondary text-secondary'
-                          : `${isDarkTheme ? 'border-white/10' : 'border-black/10'} ${barMuted} hover:${barText}`
-                      }`}
+                      className={`py-2 px-3 rounded-xl border text-center transition-all cursor-pointer text-xs font-semibold ${f.fontClass} ${font === f.id
+                        ? 'border-secondary text-secondary'
+                        : `${isDarkTheme ? 'border-white/10' : 'border-black/10'} ${barMuted} hover:${barText}`
+                        }`}
                     >
                       {f.label}
                     </button>
@@ -362,9 +360,8 @@ export function ReaderPage() {
                         <button
                           key={s}
                           onClick={() => setSpacing(s)}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            active ? 'bg-secondary/20 text-secondary border border-secondary/30' : `${barMuted} hover:${barText}`
-                          }`}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${active ? 'bg-secondary/20 text-secondary border border-secondary/30' : `${barMuted} hover:${barText}`
+                            }`}
                         >
                           {spacingLabels[s]}
                         </button>
@@ -418,11 +415,10 @@ export function ReaderPage() {
                           navigate(`/stories/${storyId}/reader/${ch.id}`);
                           setChaptersDrawerOpen(false);
                         }}
-                        className={`w-full text-left p-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-                          isActive
-                            ? 'bg-secondary/15 border-secondary/35 text-secondary shadow-sm'
-                            : 'bg-surface-container-high/40 border-white/5 text-on-surface-variant hover:text-white hover:bg-surface-container-high/60'
-                        }`}
+                        className={`w-full text-left p-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${isActive
+                          ? 'bg-secondary/15 border-secondary/35 text-secondary shadow-sm'
+                          : 'bg-surface-container-high/40 border-white/5 text-on-surface-variant hover:text-white hover:bg-surface-container-high/60'
+                          }`}
                       >
                         Chương {ch.chapter_number}: {ch.title}
                       </button>
@@ -449,7 +445,7 @@ export function ReaderPage() {
               Chương {currentChapterNumber} / {totalChapters}
             </div>
           </div>
-          
+
           <div className="flex justify-between items-center">
             <button
               disabled={!hasPrev}
@@ -459,7 +455,7 @@ export function ReaderPage() {
               <ChevronLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
               Chương trước
             </button>
-            
+
             <button
               disabled={!hasNext}
               onClick={goToNextChapter}

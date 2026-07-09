@@ -164,13 +164,13 @@ export function HomePage() {
               ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
               : recentStories.length > 0
                 ? recentStories.map(story => (
-                    <div key={story.id}>
-                      <BookCard
-                        book={storyToBookCard(story)}
-                        onClick={() => navigate('/stories/' + story.id)}
-                      />
-                    </div>
-                  ))
+                  <div key={story.id}>
+                    <BookCard
+                      book={storyToBookCard(story)}
+                      onClick={() => navigate('/stories/' + story.id)}
+                    />
+                  </div>
+                ))
                 : (
                   // Fallback to mock data if no API data
                   <div className="col-span-3 text-center py-12 text-on-surface-variant">
@@ -196,8 +196,8 @@ export function HomePage() {
               <button
                 onClick={() => setRankingTab('week')}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase transition-all duration-300 cursor-pointer ${rankingTab === 'week'
-                    ? 'bg-gradient-to-r from-primary/20 to-secondary/20 border border-white/10 text-white shadow-sm'
-                    : 'text-on-surface-variant hover:text-white'
+                  ? 'bg-gradient-to-r from-primary/20 to-secondary/20 border border-white/10 text-white shadow-sm'
+                  : 'text-on-surface-variant hover:text-white'
                   }`}
               >
                 Tuần này
@@ -205,8 +205,8 @@ export function HomePage() {
               <button
                 onClick={() => setRankingTab('month')}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase transition-all duration-300 cursor-pointer ${rankingTab === 'month'
-                    ? 'bg-gradient-to-r from-primary/20 to-secondary/20 border border-white/10 text-white shadow-sm'
-                    : 'text-on-surface-variant hover:text-white'
+                  ? 'bg-gradient-to-r from-primary/20 to-secondary/20 border border-white/10 text-white shadow-sm'
+                  : 'text-on-surface-variant hover:text-white'
                   }`}
               >
                 Tháng này
@@ -226,8 +226,8 @@ export function HomePage() {
                     onClick={() => navigate('/stories/' + story.id)}
                   >
                     <div className={`text-xl font-extrabold w-8 h-8 rounded-lg flex items-center justify-center font-display transition-all duration-300 ${index === 0 ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]' :
-                        index === 1 ? 'bg-slate-300/10 border border-slate-300/20 text-slate-300' :
-                          'bg-amber-700/10 border border-amber-700/20 text-amber-600'
+                      index === 1 ? 'bg-slate-300/10 border border-slate-300/20 text-slate-300' :
+                        'bg-amber-700/10 border border-amber-700/20 text-amber-600'
                       }`}>
                       {index + 1}
                     </div>
@@ -271,8 +271,8 @@ export function HomePage() {
               key={genre}
               onClick={() => navigate('/discover')}
               className={`px-6 py-2.5 rounded-xl text-sm font-bold tracking-wide uppercase transition-all duration-300 border cursor-pointer hover:shadow-md transform active:scale-98 ${i % 2 === 0
-                  ? 'bg-secondary/5 border-secondary/15 hover:border-secondary/35 text-secondary hover:bg-secondary/10 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)]'
-                  : 'bg-primary/5 border-primary/15 hover:border-primary/35 text-primary hover:bg-primary/10 hover:shadow-[0_0_15px_rgba(168,85,247,0.15)]'
+                ? 'bg-secondary/5 border-secondary/15 hover:border-secondary/35 text-secondary hover:bg-secondary/10 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+                : 'bg-primary/5 border-primary/15 hover:border-primary/35 text-primary hover:bg-primary/10 hover:shadow-[0_0_15px_rgba(168,85,247,0.15)]'
                 }`}
             >
               {genre}
