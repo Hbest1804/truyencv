@@ -66,7 +66,7 @@ export default function AdminStories() {
                     {story.author?.display_name || story.author?.username || 'Unknown'}
                   </td>
                   <td className="px-4 py-3 text-on-surface-variant">
-                    {new Date(story.created_at).toLocaleDateString()}
+                    {story.created_at ? new Date(story.created_at).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">

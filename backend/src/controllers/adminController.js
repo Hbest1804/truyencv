@@ -17,6 +17,12 @@ const requireSupabaseAdmin = () => {
 export const getUsers = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, role, status, search, from, to } = req.query;
+    if (from && isNaN(Date.parse(from))) {
+      return res.status(400).json({ success: false, message: 'Invalid "from" date format' });
+    }
+    if (to && isNaN(Date.parse(to))) {
+      return res.status(400).json({ success: false, message: 'Invalid "to" date format' });
+    }
     const parsedPage = Math.max(1, parseInt(page, 10) || 1);
     const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
     const offset = (parsedPage - 1) * parsedLimit;
@@ -88,6 +94,10 @@ export const changeUserRole = async (req, res, next) => {
     const { userId } = req.params;
     const { role, reason } = req.body;
     
+    if (req.user && userId === req.user.id) {
+      return res.status(400).json({ success: false, message: 'You cannot change your own role' });
+    }
+    
     if (!['reader', 'author', 'moderator', 'admin'].includes(role)) {
       return res.status(400).json({ success: false, message: 'Invalid role' });
     }
@@ -113,6 +123,10 @@ export const toggleBanUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
     const { is_banned, reason } = req.body;
+
+    if (req.user && userId === req.user.id) {
+      return res.status(400).json({ success: false, message: 'You cannot ban or unban yourself' });
+    }
 
     const adminClient = requireSupabaseAdmin();
 
@@ -217,7 +231,11 @@ export const hideStory = async (req, res, next) => {
     const { reason } = req.body;
     const { data, error } = await supabase
       .from('stories')
-      .update({ is_published: false, updated_at: new Date().toISOString() })
+      .update({ 
+        is_published: false, 
+        updated_at: new Date().toISOString() 
+        // moderation_note: reason
+      })
       .eq('id', storyId)
       .select()
       .single();
@@ -257,6 +275,10 @@ export const getGenres = async (req, res, next) => {
 export const createGenre = async (req, res, next) => {
   try {
     const { name, slug, description } = req.body;
+
+    if (slug && !/^[a-z0-9-]+$/.test(slug)) {
+      return res.status(400).json({ success: false, message: 'Slug must only contain lowercase letters, numbers, and hyphens' });
+    }
     const { data, error } = await supabase
       .from('genres')
       .insert({ name, slug, description })
@@ -273,6 +295,10 @@ export const updateGenre = async (req, res, next) => {
   try {
     const { genreId } = req.params;
     const { name, slug, description } = req.body;
+
+    if (slug && !/^[a-z0-9-]+$/.test(slug)) {
+      return res.status(400).json({ success: false, message: 'Slug must only contain lowercase letters, numbers, and hyphens' });
+    }
     const { data, error } = await supabase
       .from('genres')
       .update({ name, slug, description })
@@ -303,15 +329,7 @@ export const deleteGenre = async (req, res, next) => {
 
 export const getStatsOverview = async (req, res, next) => {
   try {
-    const [
-      { count: totalUsers },
-      { count: activeUsers },
-      { count: bannedUsers },
-      { count: totalStories },
-      { count: publishedStories },
-      { count: totalChapters },
-      { count: pendingReports }
-    ] = await Promise.all([
+    const results = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', false),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', true),
@@ -320,6 +338,19 @@ export const getStatsOverview = async (req, res, next) => {
       supabase.from('chapters').select('*', { count: 'exact', head: true }),
       supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'pending')
     ]);
+
+    const firstError = results.find(r => r.error)?.error;
+    if (firstError) throw firstError;
+
+    const [
+      { count: totalUsers },
+      { count: activeUsers },
+      { count: bannedUsers },
+      { count: totalStories },
+      { count: publishedStories },
+      { count: totalChapters },
+      { count: pendingReports }
+    ] = results;
 
     res.status(200).json({
       success: true,
@@ -421,6 +452,10 @@ export const resolveReport = async (req, res, next) => {
   try {
     const { reportId } = req.params;
     const { status, resolution_note } = req.body;
+
+    if (!['resolved', 'dismissed'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid report status' });
+    }
 
     const { data, error } = await supabase
       .from('reports')
