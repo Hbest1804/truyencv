@@ -159,23 +159,25 @@ export const searchGlobal = async (req, res, next) => {
     let authors = [];
 
     if (type === 'all' || type === 'story') {
-      const { data: storyData } = await supabase
+      const { data: storyData, error: storyError } = await supabase
         .from('stories')
         .select('*, author:profiles!author_id(username, display_name)')
         .eq('is_published', true)
         .ilike('title', `%${sanitizedSearch}%`)
         .order('view_count', { ascending: false })
         .range(offset, offset + parsedLimit - 1);
+      if (storyError) throw storyError;
       stories = storyData || [];
     }
 
     if (type === 'all' || type === 'author') {
-      const { data: authorData } = await supabase
+      const { data: authorData, error: authorError } = await supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url, role')
         .in('role', ['author', 'admin'])
         .or(`username.ilike.%${sanitizedSearch}%,display_name.ilike.%${sanitizedSearch}%`)
         .limit(parsedLimit);
+      if (authorError) throw authorError;
       authors = authorData || [];
     }
 
@@ -223,6 +225,9 @@ export const searchSuggestions = async (req, res, next) => {
         .or(`username.ilike.%${sanitizedSearch}%,display_name.ilike.%${sanitizedSearch}%`)
         .limit(5)
     ]);
+
+    if (storiesResult.error) throw storiesResult.error;
+    if (authorsResult.error) throw authorsResult.error;
 
     res.status(200).json({
       success: true,

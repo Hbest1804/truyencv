@@ -140,6 +140,7 @@ export function HeaderNotifications() {
                             to={notification.link_url} 
                             className="text-xs text-secondary hover:underline inline-block"
                             onClick={(e) => {
+                               e.stopPropagation();
                                if (!notification.is_read) handleMarkAsRead(notification.id);
                                setIsOpen(false);
                             }}

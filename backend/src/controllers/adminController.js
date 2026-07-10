@@ -331,11 +331,13 @@ export const updateStory = async (req, res, next) => {
     if (updateRes.error) throw updateRes.error;
     if (!updateRes.data) return res.status(404).json({ success: false, message: 'Story not found' });
 
-    if (genreIds && Array.isArray(genreIds) && genreIds.length > 0) {
+    if (genreIds && Array.isArray(genreIds)) {
       await adminClient.from('story_genres').delete().eq('story_id', storyId);
-      const uniqueGenreIds = [...new Set(genreIds)];
-      const storyGenres = uniqueGenreIds.map((gId) => ({ story_id: storyId, genre_id: gId }));
-      await adminClient.from('story_genres').insert(storyGenres);
+      if (genreIds.length > 0) {
+        const uniqueGenreIds = [...new Set(genreIds)];
+        const storyGenres = uniqueGenreIds.map((gId) => ({ story_id: storyId, genre_id: gId }));
+        await adminClient.from('story_genres').insert(storyGenres);
+      }
     }
 
     res.status(200).json({ success: true, data: updateRes.data, message: 'Story updated successfully' });
@@ -362,7 +364,7 @@ export const uploadStoryCover = async (req, res, next) => {
     const fileName = `${storyId}-${Date.now()}.${fileExt}`;
     const filePath = `${storyId}/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await adminClient.storage
       .from('covers')
       .upload(filePath, req.file.buffer, {
         contentType: req.file.mimetype,
@@ -523,10 +525,10 @@ export const getTopFavoriteStories = async (req, res, next) => {
 export const getUserGrowth = async (req, res, next) => {
   try {
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    today.setUTCHours(23, 59, 59, 999);
     const date7DaysAgo = new Date(today);
-    date7DaysAgo.setDate(date7DaysAgo.getDate() - 6);
-    date7DaysAgo.setHours(0, 0, 0, 0);
+    date7DaysAgo.setUTCDate(date7DaysAgo.getUTCDate() - 6);
+    date7DaysAgo.setUTCHours(0, 0, 0, 0);
 
     const { data: profiles, error: errProfiles } = await supabase
       .from('profiles')
@@ -548,13 +550,13 @@ export const getUserGrowth = async (req, res, next) => {
     const growthData = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(date7DaysAgo);
-      d.setDate(d.getDate() + i);
+      d.setUTCDate(d.getUTCDate() + i);
       const dateString = d.toISOString().split('T')[0];
       
-      const dayUsers = profiles.filter(p => p.created_at.startsWith(dateString)).length;
-      const dayStories = stories.filter(s => s.created_at.startsWith(dateString)).length;
+      const dayUsers = (profiles || []).filter(p => p.created_at.startsWith(dateString)).length;
+      const dayStories = (stories || []).filter(s => s.created_at.startsWith(dateString)).length;
       
-      const dayName = d.toLocaleDateString('vi-VN', { weekday: 'short' }); // e.g., T2, T3
+      const dayName = d.toLocaleDateString('vi-VN', { weekday: 'short', timeZone: 'UTC' }); // e.g., T2, T3
       
       growthData.push({
         name: dayName,

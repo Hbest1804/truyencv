@@ -654,7 +654,7 @@ export const getChaptersOfStory = async (storyId, { page = 1, limit = 50 } = {})
     .range(offset, offset + limit - 1);
 
   if (error) {
-    if (error.message.includes('invalid input syntax for type uuid')) {
+    if (error.message?.includes('invalid input syntax for type uuid')) {
       const err = new Error('Truyện không tồn tại');
       err.statusCode = 404;
       throw err;
