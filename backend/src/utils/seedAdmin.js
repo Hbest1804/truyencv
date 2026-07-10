@@ -44,7 +44,15 @@ export const seedAdminAccount = async () => {
     );
 
     if (adminAlreadyExists) {
-      console.log(`✅ [SeedAdmin] Tài khoản Admin (${adminEmail}) đã tồn tại — bỏ qua.`);
+      console.log(`✅ [SeedAdmin] Tài khoản Admin (${adminEmail}) đã tồn tại — đang kiểm tra và cấp quyền admin...`);
+      const existingAdmin = existingUsers.users.find(user => user.email === adminEmail);
+      if (existingAdmin) {
+        // Đảm bảo luôn cấp quyền admin cho tài khoản này dù đã tồn tại
+        await supabaseAdmin.from('profiles').update({ role: 'admin' }).eq('id', existingAdmin.id);
+        await supabaseAdmin.auth.admin.updateUserById(existingAdmin.id, {
+          user_metadata: { ...existingAdmin.user_metadata, role: 'admin' }
+        });
+      }
       return;
     }
 
