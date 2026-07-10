@@ -10,12 +10,10 @@ export interface Genre {
 
 export const genreService = {
   getGenres: async () => {
-    const response = await api.get('/genres');
-    return response.data;
+    return api.get('/genres');
   },
 
   getStoriesByGenre: async (genreId: string | number, params?: { page?: number; limit?: number }) => {
-    const response = await api.get(`/genres/${genreId}/stories`, { params });
-    return response.data;
+    return api.get(`/genres/${genreId}/stories`, { params });
   }
 };

@@ -17,13 +17,11 @@ export interface SearchResult {
 
 export const searchService = {
   searchGlobal: async (params: { q: string; type?: 'all' | 'story' | 'author'; page?: number; limit?: number }) => {
-    const response = await api.get('/search', { params });
-    return response.data;
+    return api.get('/search', { params });
   },
 
   getSuggestions: async (q: string) => {
-    const response = await api.get('/search/suggestions', { params: { q } });
-    return response.data;
+    return api.get('/search/suggestions', { params: { q } });
   }
 };
 

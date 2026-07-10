@@ -13,22 +13,18 @@ export interface Notification {
 
 export const notificationService = {
   getNotifications: async () => {
-    const response = await api.get('/notifications');
-    return response.data;
+    return api.get('/notifications');
   },
 
   markAsRead: async (id: string) => {
-    const response = await api.patch(`/notifications/${id}/read`);
-    return response.data;
+    return api.patch(`/notifications/${id}/read`);
   },
 
   markAllAsRead: async () => {
-    const response = await api.patch('/notifications/read-all');
-    return response.data;
+    return api.patch('/notifications/read-all');
   },
 
   deleteNotification: async (id: string) => {
-    const response = await api.delete(`/notifications/${id}`);
-    return response.data;
+    return api.delete(`/notifications/${id}`);
   }
 };
