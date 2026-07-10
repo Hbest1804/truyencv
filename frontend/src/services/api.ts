@@ -21,7 +21,12 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   });
 
   const text = await response.text();
-  const json = text ? JSON.parse(text) : {};
+  let json: any = {};
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch (e) {
+    json = { message: text || 'Đã xảy ra lỗi' };
+  }
 
   if (!response.ok) {
     const error = new Error(json.message || 'Đã xảy ra lỗi');

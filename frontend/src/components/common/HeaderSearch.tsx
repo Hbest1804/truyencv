@@ -29,23 +29,27 @@ export function HeaderSearch({ searchFocused, setSearchFocused }: { searchFocuse
       return;
     }
 
+    let active = true;
     setLoading(true);
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await searchService.getSuggestions(query);
-        if (res.success) {
+        if (active && res.success) {
           setSuggestions(res.data);
         }
       } catch (error) {
-        console.error('Failed to fetch suggestions', error);
+        if (active) console.error('Failed to fetch suggestions', error);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }, 300);
 
-    return () => clearTimeout(debounceRef.current);
+    return () => {
+      active = false;
+      clearTimeout(debounceRef.current);
+    };
   }, [query]);
 
   const handleSearch = (e?: React.FormEvent) => {

@@ -52,7 +52,7 @@ export const getStoriesByGenre = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: data.map(d => {
+      data: (data || []).map(d => {
         const { story_genres, ...rest } = d;
         return rest;
       }),
@@ -155,31 +155,32 @@ export const searchGlobal = async (req, res, next) => {
     const offset = (parsedPage - 1) * parsedLimit;
     const sanitizedSearch = q.replace(/[,()]/g, '');
 
-    let stories = [];
-    let authors = [];
+    const storiesPromise = (type === 'all' || type === 'story')
+      ? supabase
+          .from('stories')
+          .select('*, author:profiles!author_id(username, display_name)')
+          .eq('is_published', true)
+          .ilike('title', `%${sanitizedSearch}%`)
+          .order('view_count', { ascending: false })
+          .range(offset, offset + parsedLimit - 1)
+      : Promise.resolve({ data: [] });
 
-    if (type === 'all' || type === 'story') {
-      const { data: storyData, error: storyError } = await supabase
-        .from('stories')
-        .select('*, author:profiles!author_id(username, display_name)')
-        .eq('is_published', true)
-        .ilike('title', `%${sanitizedSearch}%`)
-        .order('view_count', { ascending: false })
-        .range(offset, offset + parsedLimit - 1);
-      if (storyError) throw storyError;
-      stories = storyData || [];
-    }
+    const authorsPromise = (type === 'all' || type === 'author')
+      ? supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, role')
+          .in('role', ['author', 'admin'])
+          .or(`username.ilike.%${sanitizedSearch}%,display_name.ilike.%${sanitizedSearch}%`)
+          .limit(parsedLimit)
+      : Promise.resolve({ data: [] });
 
-    if (type === 'all' || type === 'author') {
-      const { data: authorData, error: authorError } = await supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url, role')
-        .in('role', ['author', 'admin'])
-        .or(`username.ilike.%${sanitizedSearch}%,display_name.ilike.%${sanitizedSearch}%`)
-        .limit(parsedLimit);
-      if (authorError) throw authorError;
-      authors = authorData || [];
-    }
+    const [storiesResult, authorsResult] = await Promise.all([storiesPromise, authorsPromise]);
+
+    if (storiesResult.error) throw storiesResult.error;
+    if (authorsResult.error) throw authorsResult.error;
+
+    const stories = storiesResult.data || [];
+    const authors = authorsResult.data || [];
 
     res.status(200).json({
       success: true,

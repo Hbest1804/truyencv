@@ -14,7 +14,7 @@ export default function AdminStoryEdit() {
     title: '',
     description: '',
     status: 'draft',
-    genreIds: [] as number[],
+    genreIds: [] as (string | number)[],
     view_count: 0,
     original_author: '',
   });
