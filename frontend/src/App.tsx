@@ -1,7 +1,7 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import { Header, Footer } from '@/layouts';
-import { HomePage, DiscoverPage, DetailPage, ReaderPage, ProfilePage, LoginPage, RegisterPage, AuthorDashboard, AuthorStoryEdit, AuthorChapters, AuthorChapterEdit } from '@/pages';
+import { Header, Footer, AdminLayout } from '@/layouts';
+import { HomePage, DiscoverPage, DetailPage, ReaderPage, ProfilePage, LoginPage, RegisterPage, AuthorDashboard, AuthorStoryEdit, AuthorChapters, AuthorChapterEdit, AdminDashboard, AdminUsers, AdminStories, AdminGenres, AdminReports } from '@/pages';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -145,6 +145,14 @@ export default function App() {
                 </motion.div>
               }
             />
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="stories" element={<AdminStories />} />
+              <Route path="genres" element={<AdminGenres />} />
+              <Route path="reports" element={<AdminReports />} />
+            </Route>
           </Routes>
         </AnimatePresence>
         

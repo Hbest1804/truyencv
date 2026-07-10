@@ -4,6 +4,7 @@ import authRoutes from './authRoutes.js';
 import storyRoutes from './storyRoutes.js';
 import userRoutes from './userRoutes.js';
 import authorRoutes from './authorRoutes.js';
+import adminRoutes from './adminRoutes.js';
 
 const router = express.Router();
 
@@ -13,6 +14,6 @@ router.use('/auth', authRoutes);
 router.use('/stories', storyRoutes);
 router.use('/users', userRoutes);
 router.use('/author', authorRoutes);
-
+router.use('/admin', adminRoutes);
 
 export default router;
