@@ -526,7 +526,7 @@ export function ProfilePage() {
                               {story.title}
                             </h4>
                             <p className="text-xs text-on-surface-variant mt-1 flex items-center gap-2">
-                              <span>Tác giả: {story.author?.display_name || story.author?.username || 'Không rõ'}</span>
+                              <span>Tác giả: {story.original_author || story.author?.display_name || story.author?.username || 'Không rõ'}</span>
                               <span>•</span>
                               <span className="capitalize">{story.status === 'ongoing' ? 'Đang ra' : 'Hoàn thành'}</span>
                             </p>

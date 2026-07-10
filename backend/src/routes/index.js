@@ -5,6 +5,7 @@ import storyRoutes from './storyRoutes.js';
 import userRoutes from './userRoutes.js';
 import authorRoutes from './authorRoutes.js';
 import adminRoutes from './adminRoutes.js';
+import utilityRoutes from './utilityRoutes.js';
 
 const router = express.Router();
 
@@ -15,5 +16,8 @@ router.use('/stories', storyRoutes);
 router.use('/users', userRoutes);
 router.use('/author', authorRoutes);
 router.use('/admin', adminRoutes);
+
+// Tích hợp các route công cộng và tiện ích (Genres, Notifications, Search)
+router.use('/', utilityRoutes);
 
 export default router;

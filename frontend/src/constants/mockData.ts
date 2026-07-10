@@ -5,7 +5,7 @@ export const FEATURED_BOOK = {
   title: 'Đại Đạo Tranh Phong',
   author: 'Unknown',
   coverUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBVnDN7_2njwvETWKLNDXtuCPO9qGjWATU9vyCUTvwGxweuf4ojgbQKIheHkJDYqOUSxhHRKS7OsCeV3y9Sg9n16ShLADgilvaInPNQmIh6txYt5mpN1qhIxqRl9Fk-BSikAmv6byncJsngeGX8GK9XAE9PMOR2hmiq982hjxR27u4t19QJBViKDu3Unfx3dECbM0y_McktmM4V98HdN3lZ7nVnmHYLaSSaO782oTG0gzzwUJeH3qqK3pXiG0qlvSulV4fAU2S6B8h0',
-  description: 'Một câu chuyện tu tiên mang đậm triết lý nhân sinh, nơi con đường cầu đạo không chỉ là sức mạnh mà còn là sự thấu hiểu vũ trụ và bản ngã.'
+  synopsis: 'Một câu chuyện tu tiên mang đậm triết lý nhân sinh, nơi con đường cầu đạo không chỉ là sức mạnh mà còn là sự thấu hiểu vũ trụ và bản ngã.'
 };
 
 export const RECENT_BOOKS: Book[] = [
