@@ -22,7 +22,7 @@ app.get('/', (req, res) => {
 });
 
 // Định tuyến API chính
-app.use('/api', routes);
+app.use('/', routes);
 
 // Route mặc định cho các request không hợp lệ (404 Not Found)
 app.use((req, res, next) => {

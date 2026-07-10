@@ -1,6 +1,6 @@
 import { Story, StoriesListResult, ShareData, RatingData, ReportReason, DbChapter } from '@/types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
