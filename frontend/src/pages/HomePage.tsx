@@ -35,7 +35,7 @@ function storyToBookCard(story: Story) {
   return {
     id: story.id,
     title: story.title,
-    author: story.author_display_name || story.author_username || 'Không rõ',
+    author: story.original_author || story.author_display_name || story.author_username || 'Không rõ',
     coverUrl: story.cover_url || 'https://placehold.co/400x600/1a1a2e/c084fc?text=No+Cover',
     genres: story.genres?.map(g => g.name) || [],
     status: statusMap[story.status] || 'Ongoing',
@@ -80,6 +80,10 @@ export function HomePage() {
   const currentRankings = rankingTab === 'week' ? weeklyTrending : monthlyTrending;
   const rankingLoading = rankingTab === 'week' ? weeklyLoading : monthlyLoading;
 
+  // Dùng truyện top 1 trong tuần làm truyện đề cử (nếu có), nếu không có thì fallback về MOCK
+  const featuredApiStory = weeklyTrending && weeklyTrending.length > 0 ? weeklyTrending[0] : null;
+  const featuredBook = featuredApiStory ? storyToBookCard(featuredApiStory) : FEATURED_BOOK;
+
   return (
     <motion.div
       variants={containerVariants}
@@ -101,20 +105,20 @@ export function HomePage() {
             Bản tin đề cử
           </div>
           <h1 className="text-3xl md:text-5.5xl font-black text-white mb-4 leading-tight font-display tracking-tight">
-            {FEATURED_BOOK.title}
+            {featuredBook.title}
           </h1>
-          <p className="text-sm md:text-base text-on-surface-variant mb-8 max-w-lg leading-relaxed font-ui">
-            {FEATURED_BOOK.description}
+          <p className="text-sm md:text-base text-on-surface-variant mb-8 max-w-lg leading-relaxed font-ui line-clamp-3">
+            {featuredBook.synopsis || 'Chưa có mô tả cho truyện này.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <button
-              onClick={() => navigate('/stories/' + FEATURED_BOOK.id)}
+              onClick={() => navigate('/stories/' + featuredBook.id)}
               className="bg-secondary text-on-secondary shadow-[0_4px_20px_rgba(6,182,212,0.35)] hover:shadow-[0_4px_25px_rgba(6,182,212,0.5)] px-8 py-3.5 rounded-xl font-bold hover:bg-secondary/90 transition-all duration-300 transform active:scale-98 cursor-pointer flex items-center justify-center gap-2"
             >
               <BookOpen className="w-5 h-5" /> Đọc ngay
             </button>
             <button
-              onClick={() => navigate('/stories/' + FEATURED_BOOK.id)}
+              onClick={() => navigate('/stories/' + featuredBook.id)}
               className="px-8 py-3.5 rounded-xl font-bold border border-white/10 text-white hover:bg-white/5 hover:border-white/20 transition-all duration-300 transform active:scale-98 cursor-pointer"
             >
               Chi tiết truyện
@@ -123,7 +127,7 @@ export function HomePage() {
         </div>
         <div className="md:w-[45%] relative h-64 md:h-full overflow-hidden">
           <img
-            src={FEATURED_BOOK.coverUrl}
+            src={featuredBook.coverUrl}
             alt="Featured Book Cover"
             className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-1000 hover:scale-103"
           />

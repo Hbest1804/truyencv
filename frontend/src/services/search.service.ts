@@ -1,4 +1,5 @@
-import api from './api';
+import api from './api.ts';
+
 import { Story } from '@/types';
 
 export interface AuthorInfo {
@@ -25,3 +26,4 @@ export const searchService = {
     return response.data;
   }
 };
+

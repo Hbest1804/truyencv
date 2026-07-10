@@ -1,8 +1,10 @@
 // Middleware xử lý lỗi tập trung cho toàn ứng dụng Express
 export const errorMiddleware = (err, req, res, next) => {
-  console.error('Error stack:', err.stack || err);
+  if (err.statusCode !== 404) {
+    console.error('Error stack:', err.stack || err);
+  }
 
-  const statusCode = err.statusCode || 500;
+  const statusCode = Number(err.statusCode) || 500;
   const message = err.message || 'Internal Server Error';
 
   res.status(statusCode).json({

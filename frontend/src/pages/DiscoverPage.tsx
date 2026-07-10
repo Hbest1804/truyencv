@@ -42,7 +42,7 @@ function storyToBookCard(story: Story) {
   return {
     id: story.id,
     title: story.title,
-    author: story.author_display_name || story.author_username || 'Không rõ',
+    author: story.original_author || story.author_display_name || story.author_username || 'Không rõ',
     coverUrl: story.cover_url || 'https://placehold.co/400x600/1a1a2e/c084fc?text=No+Cover',
     genres: story.genres?.map(g => g.name) || [],
     status: statusMap[story.status] || 'Ongoing',

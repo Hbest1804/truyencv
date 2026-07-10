@@ -3,6 +3,11 @@ import { authMiddleware, requireRole } from '../middlewares/authMiddleware.js';
 import * as adminController from '../controllers/adminController.js';
 
 const router = express.Router();
+import multer from 'multer';
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 // Tất cả các route trong file này đều yêu cầu đăng nhập và có role 'admin'
 router.use(authMiddleware, requireRole(['admin']));
@@ -23,6 +28,9 @@ router.get('/stories', adminController.getPendingStories);
 router.patch('/stories/:storyId/approve', adminController.approveStory);
 router.patch('/stories/:storyId/hide', adminController.hideStory);
 router.delete('/stories/:storyId', adminController.deleteStory);
+router.get('/stories/:storyId', adminController.getStoryDetail);
+router.put('/stories/:storyId', adminController.updateStory);
+router.post('/stories/:storyId/cover', upload.single('cover'), adminController.uploadStoryCover);
 
 // Quản lý thể loại
 router.get('/genres', adminController.getGenres);

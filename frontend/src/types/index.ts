@@ -83,6 +83,7 @@ export interface Story {
   updated_at: string;
   published_at: string | null;
   // From v_story_detail JOIN
+  original_author?: string | null;
   author_username: string;
   author_display_name: string | null;
   author_avatar_url: string | null;

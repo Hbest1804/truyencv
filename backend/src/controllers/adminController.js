@@ -179,15 +179,22 @@ export const getUserActivity = async (req, res, next) => {
 
 export const getPendingStories = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 20, status } = req.query;
     const parsedPage = Math.max(1, parseInt(page, 10) || 1);
     const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
     const offset = (parsedPage - 1) * parsedLimit;
 
-    const { data, count, error } = await supabase
+    let query = supabase
       .from('stories')
-      .select('*, author:profiles!author_id(username, display_name)', { count: 'exact' })
-      .eq('is_published', false)
+      .select('*, author:profiles!author_id(username, display_name)', { count: 'exact' });
+
+    if (status === 'pending') {
+      query = query.eq('is_published', false);
+    } else if (status === 'published') {
+      query = query.eq('is_published', true);
+    }
+
+    const { data, count, error } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + parsedLimit - 1);
 
@@ -257,6 +264,121 @@ export const deleteStory = async (req, res, next) => {
 
     if (error) throw error;
     res.status(200).json({ success: true, message: 'Story deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getStoryDetail = async (req, res, next) => {
+  try {
+    const { storyId } = req.params;
+    const { data, error } = await supabase
+      .from('stories')
+      .select(`
+        *,
+        author:profiles!author_id(username, display_name),
+        story_genres (
+          genres (
+            id, name
+          )
+        )
+      `)
+      .eq('id', storyId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ success: false, message: 'Story not found' });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...data,
+        genres: (data.story_genres || []).map((sg) => sg.genres).filter(Boolean),
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateStory = async (req, res, next) => {
+  try {
+    const { storyId } = req.params;
+    const { title, description, genreIds, status, author_id, view_count, original_author } = req.body;
+    
+    const updates = { updated_at: new Date().toISOString() };
+    if (title !== undefined) updates.title = title;
+    if (description !== undefined) updates.description = description;
+    if (status !== undefined) {
+      updates.status = status;
+      updates.is_published = status === 'ongoing' || status === 'completed';
+    }
+    if (author_id !== undefined) updates.author_id = author_id;
+    if (view_count !== undefined) updates.view_count = view_count;
+    if (original_author !== undefined) updates.original_author = original_author;
+
+    // We use supabaseAdmin here to bypass RLS in case it blocks original_author updates
+    const adminClient = requireSupabaseAdmin();
+    
+    // Check if column exists by trying to update it. If it fails due to column missing, we ignore it.
+    let updateRes = await adminClient.from('stories').update(updates).eq('id', storyId).select().maybeSingle();
+    
+    if (updateRes.error && updateRes.error.message.includes('original_author')) {
+      delete updates.original_author;
+      updateRes = await adminClient.from('stories').update(updates).eq('id', storyId).select().maybeSingle();
+    }
+
+    if (updateRes.error) throw updateRes.error;
+    if (!updateRes.data) return res.status(404).json({ success: false, message: 'Story not found' });
+
+    if (genreIds && Array.isArray(genreIds) && genreIds.length > 0) {
+      await adminClient.from('story_genres').delete().eq('story_id', storyId);
+      const uniqueGenreIds = [...new Set(genreIds)];
+      const storyGenres = uniqueGenreIds.map((gId) => ({ story_id: storyId, genre_id: gId }));
+      await adminClient.from('story_genres').insert(storyGenres);
+    }
+
+    res.status(200).json({ success: true, data: updateRes.data, message: 'Story updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const uploadStoryCover = async (req, res, next) => {
+  try {
+    const { storyId } = req.params;
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+    const adminClient = requireSupabaseAdmin();
+    const { data: story, error: checkError } = await adminClient.from('stories').select('id').eq('id', storyId).maybeSingle();
+    if (checkError) throw checkError;
+    if (!story) return res.status(404).json({ success: false, message: 'Story not found' });
+
+    const fileExt = req.file.mimetype.split('/')[1] || 'jpg';
+    const fileName = `${storyId}-${Date.now()}.${fileExt}`;
+    const filePath = `${storyId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('covers')
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: publicUrlData } = supabase.storage.from('covers').getPublicUrl(filePath);
+    const coverUrl = publicUrlData.publicUrl;
+
+    const { data: updatedStory, error: updateError } = await adminClient
+      .from('stories')
+      .update({ cover_url: coverUrl, updated_at: new Date().toISOString() })
+      .eq('id', storyId)
+      .select()
+      .maybeSingle();
+
+    if (updateError) throw updateError;
+    res.status(200).json({ success: true, data: updatedStory });
   } catch (error) {
     next(error);
   }
@@ -396,8 +518,48 @@ export const getTopFavoriteStories = async (req, res, next) => {
 
 export const getUserGrowth = async (req, res, next) => {
   try {
-    // Placeholder cho user growth, trong thực tế sẽ group by month/day
-    res.status(200).json({ success: true, data: [] });
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const date7DaysAgo = new Date(today);
+    date7DaysAgo.setDate(date7DaysAgo.getDate() - 6);
+    date7DaysAgo.setHours(0, 0, 0, 0);
+
+    const { data: profiles, error: errProfiles } = await supabase
+      .from('profiles')
+      .select('created_at')
+      .gte('created_at', date7DaysAgo.toISOString())
+      .lte('created_at', today.toISOString());
+      
+    if (errProfiles) throw errProfiles;
+
+    const { data: stories, error: errStories } = await supabase
+      .from('stories')
+      .select('created_at')
+      .gte('created_at', date7DaysAgo.toISOString())
+      .lte('created_at', today.toISOString());
+
+    if (errStories) throw errStories;
+
+    // Group by day
+    const growthData = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(date7DaysAgo);
+      d.setDate(d.getDate() + i);
+      const dateString = d.toISOString().split('T')[0];
+      
+      const dayUsers = profiles.filter(p => p.created_at.startsWith(dateString)).length;
+      const dayStories = stories.filter(s => s.created_at.startsWith(dateString)).length;
+      
+      const dayName = d.toLocaleDateString('vi-VN', { weekday: 'short' }); // e.g., T2, T3
+      
+      growthData.push({
+        name: dayName,
+        users: dayUsers,
+        stories: dayStories
+      });
+    }
+
+    res.status(200).json({ success: true, data: growthData });
   } catch (error) {
     next(error);
   }

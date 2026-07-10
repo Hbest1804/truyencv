@@ -465,7 +465,7 @@ export function DetailPage() {
 
   // ─── Story data (API or fallback) ─────────────────────────────────────────
   const title = story?.title || 'Echoes of the Neon Citadel';
-  const author = story?.author_display_name || story?.author_username || 'Aria Vance';
+  const author = story?.original_author || story?.author_display_name || story?.author_username || 'Aria Vance';
   const coverUrl = story?.cover_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBkM2R6zheb9eqEGUi4jXGsEyeP_DXGBu7rBQyMICcr1EL9YJAWHC7lhMzuk3Ac4UT2XwW8yhHygjWbmW2wBDtsvLyYP9nAORQBsUaygZaLcAX-VPHDqegxkUv71glg2xlSG752Q0nk8wevi_uMJLqu2ecwc0anQcgP-Za9uAvHNy6nL2SCiGDxCQ3dS15Y1G3FToR8v8VSeXhAHRAtKQCXKMYYxAeEKBnbjxt5_dRDDDkHpE7VmhKkXkCZcmNMAdxp6TmpgtIc9Cor';
   const genres = story?.genres?.map(g => g.name) || ['SCI-FI', 'CYBERPUNK', 'MYSTERY'];
   const ratingAvg = story?.rating_avg ?? 4.8;

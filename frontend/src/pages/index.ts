@@ -17,5 +17,6 @@ export { AuthorChapterEdit } from './author/AuthorChapterEdit';
 export { default as AdminDashboard } from './admin/AdminDashboard';
 export { default as AdminUsers } from './admin/AdminUsers';
 export { default as AdminStories } from './admin/AdminStories';
+export { default as AdminStoryEdit } from './admin/AdminStoryEdit';
 export { default as AdminGenres } from './admin/AdminGenres';
 export { default as AdminReports } from './admin/AdminReports';

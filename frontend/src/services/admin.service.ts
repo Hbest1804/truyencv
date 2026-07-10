@@ -1,19 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 function getAccessToken(): string | null {
-  const token = localStorage.getItem('supabase_access_token');
-  if (token) return token;
-  const storageKey = Object.keys(localStorage).find(key => key.startsWith('sb-') && key.endsWith('-auth-token'));
-  const storageStr = storageKey ? localStorage.getItem(storageKey) : null;
-  if (storageStr) {
-    try {
-      const storageObj = JSON.parse(storageStr);
-      return storageObj?.access_token || null;
-    } catch (e) {
-      return null;
-    }
-  }
-  return null;
+  return localStorage.getItem('auth_access_token');
 }
 
 const getHeaders = () => {
@@ -32,7 +20,7 @@ const handleResponse = async (res: Response) => {
   if (!res.ok) {
     throw { response: { data, status: res.status } };
   }
-  return { data };
+  return data;
 };
 
 export const adminService = {
@@ -62,6 +50,26 @@ export const adminService = {
   getPendingStories: (params?: Record<string, any>) => {
     const query = new URLSearchParams(params).toString();
     return fetch(`${API_BASE}/admin/stories?${query}`, { headers: getHeaders() }).then(handleResponse);
+  },
+  getStoryDetail: (storyId: string) =>
+    fetch(`${API_BASE}/admin/stories/${storyId}`, { headers: getHeaders() }).then(handleResponse),
+  updateStory: (storyId: string, data: any) =>
+    fetch(`${API_BASE}/admin/stories/${storyId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    }).then(handleResponse),
+  uploadStoryCover: (storyId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('cover', file);
+    const token = getAccessToken();
+    const headers: HeadersInit = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return fetch(`${API_BASE}/admin/stories/${storyId}/cover`, {
+      method: 'POST',
+      headers,
+      body: formData
+    }).then(handleResponse);
   },
   approveStory: (storyId: string) =>
     fetch(`${API_BASE}/admin/stories/${storyId}/approve`, {
@@ -105,6 +113,7 @@ export const adminService = {
     const query = new URLSearchParams(params).toString();
     return fetch(`${API_BASE}/admin/stats/overview?${query}`, { headers: getHeaders() }).then(handleResponse);
   },
+  getUserGrowth: () => fetch(`${API_BASE}/admin/stats/users/growth`, { headers: getHeaders() }).then(handleResponse),
   
   // Reports
   getReports: (params?: Record<string, any>) => {
