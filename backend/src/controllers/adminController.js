@@ -332,11 +332,14 @@ export const updateStory = async (req, res, next) => {
     if (!updateRes.data) return res.status(404).json({ success: false, message: 'Story not found' });
 
     if (genreIds && Array.isArray(genreIds)) {
-      await adminClient.from('story_genres').delete().eq('story_id', storyId);
+      const { error: deleteError } = await adminClient.from('story_genres').delete().eq('story_id', storyId);
+      if (deleteError) throw deleteError;
+
       if (genreIds.length > 0) {
         const uniqueGenreIds = [...new Set(genreIds)];
         const storyGenres = uniqueGenreIds.map((gId) => ({ story_id: storyId, genre_id: gId }));
-        await adminClient.from('story_genres').insert(storyGenres);
+        const { error: insertError } = await adminClient.from('story_genres').insert(storyGenres);
+        if (insertError) throw insertError;
       }
     }
 

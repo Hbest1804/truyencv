@@ -204,9 +204,67 @@ export function HeaderSearch({ searchFocused, setSearchFocused }: { searchFocuse
              </div>
              
              <div className="flex-1 overflow-y-auto p-4">
-                {/* Re-use suggestions logic for mobile if needed, or just let user press enter */}
                 {loading && <div className="text-center py-4 text-on-surface-variant"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>}
-                {/* ... similar to desktop dropdown ... */}
+                
+                {!loading && suggestions?.stories?.length === 0 && suggestions?.authors?.length === 0 && (
+                  <div className="p-4 text-center text-on-surface-variant text-sm">
+                    Không tìm thấy kết quả nào cho "{query}"
+                  </div>
+                )}
+
+                {suggestions?.stories && suggestions.stories.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Truyện</h4>
+                    {suggestions.stories.map(story => (
+                      <div 
+                        key={`m-story-${story.id}`}
+                        onClick={() => {
+                          navigate(`/stories/${story.id}`);
+                          setSearchFocused(false);
+                        }}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors mb-2"
+                      >
+                        {story.cover_url ? (
+                           <img src={story.cover_url} alt={story.title} className="w-12 h-16 object-cover rounded" />
+                        ) : (
+                           <div className="w-12 h-16 bg-surface-container flex items-center justify-center rounded">
+                             <span className="text-xs text-on-surface-variant">No img</span>
+                           </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-semibold truncate">{story.title}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {suggestions?.authors && suggestions.authors.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Tác giả</h4>
+                    {suggestions.authors.map(author => (
+                      <div 
+                        key={`m-author-${author.id}`}
+                        onClick={() => {
+                           navigate(`/search?q=${encodeURIComponent(author.username)}&type=author`);
+                           setSearchFocused(false);
+                        }}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors mb-2"
+                      >
+                         {author.avatar_url ? (
+                           <img src={author.avatar_url} alt={author.display_name} className="w-10 h-10 rounded-full object-cover" />
+                         ) : (
+                           <div className="w-10 h-10 bg-surface-container rounded-full flex items-center justify-center">
+                             <span className="text-white text-xs">{author.username[0].toUpperCase()}</span>
+                           </div>
+                         )}
+                         <div className="flex-1 min-w-0">
+                           <p className="text-white text-sm font-semibold truncate">{author.display_name || author.username}</p>
+                         </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
              </div>
           </motion.div>
         )}

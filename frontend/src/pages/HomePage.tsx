@@ -44,7 +44,7 @@ function storyToBookCard(story: Story) {
     views: story.view_count > 1000
       ? `${(story.view_count / 1000).toFixed(1)}k`
       : String(story.view_count),
-    synopsis: story.synopsis || story.description || undefined,
+    synopsis: story.description,
   };
 }
 

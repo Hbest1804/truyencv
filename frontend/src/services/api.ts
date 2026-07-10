@@ -20,7 +20,8 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     headers,
   });
 
-  const json = await response.json();
+  const text = await response.text();
+  const json = text ? JSON.parse(text) : {};
 
   if (!response.ok) {
     const error = new Error(json.message || 'Đã xảy ra lỗi');
