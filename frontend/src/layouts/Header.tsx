@@ -3,6 +3,8 @@ import { Bell, Search, Settings, Menu, X, Home, Compass, Bookmark, MessageSquare
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/hooks/useAuth';
+import { HeaderSearch } from '@/components/common/HeaderSearch';
+import { HeaderNotifications } from '@/components/common/HeaderNotifications';
 
 export function Header() {
   const { isAuthenticated, user, logout, isLoading } = useAuth();
@@ -115,37 +117,13 @@ export function Header() {
           {/* Actions */}
           <div className="flex items-center gap-3">
             {/* Expandable Search */}
-            <div className="relative flex items-center">
-              <motion.div
-                animate={{ width: searchFocused ? 240 : 160 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                className="hidden sm:flex items-center relative"
-              >
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm..."
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  className={`w-full bg-surface-container-high/60 border rounded-full py-1.5 px-4 pl-10 text-white text-sm outline-none transition-all ${searchFocused
-                      ? 'border-secondary/50 shadow-[0_0_12px_rgba(6,182,212,0.15)] bg-surface-container-highest'
-                      : 'border-white/5 hover:border-white/10'
-                    }`}
-                />
-                <Search className={`absolute left-3.5 w-4 h-4 transition-colors ${searchFocused ? 'text-secondary' : 'text-outline'}`} />
-              </motion.div>
-              <button className="sm:hidden text-on-surface-variant hover:text-white transition-colors p-2 rounded-full hover:bg-white/5">
-                <Search className="w-5 h-5" />
-              </button>
-            </div>
+            <HeaderSearch searchFocused={searchFocused} setSearchFocused={setSearchFocused} />
 
             {/* Auth Section */}
             {isAuthenticated && user ? (
               <>
                 <div className="hidden sm:flex items-center gap-1">
-                  <button className="text-on-surface-variant hover:text-white transition-colors p-2 rounded-full hover:bg-white/5 relative">
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(6,182,212,0.6)]"></span>
-                  </button>
+                  <HeaderNotifications />
                 </div>
 
                 <div className="relative hidden sm:block" ref={dropdownRef}>

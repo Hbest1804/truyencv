@@ -5,7 +5,8 @@ export { ReaderPage } from './ReaderPage';
 export { ProfilePage } from './ProfilePage';
 export { LoginPage } from './LoginPage';
 export { RegisterPage } from './RegisterPage';
-
+export { GenresPage } from './public/GenresPage';
+export { SearchPage } from './public/SearchPage';
 // Author Pages
 export { AuthorDashboard } from './author/AuthorDashboard';
 export { AuthorStoryEdit } from './author/AuthorStoryEdit';
