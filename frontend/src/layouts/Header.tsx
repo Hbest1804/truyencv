@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Search, Settings, Menu, X, Home, Compass, Bookmark, MessageSquare, LogOut, ChevronDown, UserCircle } from 'lucide-react';
+import { Bell, Search, Settings, Menu, X, Home, Compass, Bookmark, MessageSquare, LogOut, ChevronDown, UserCircle, Shield, PenTool } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/hooks/useAuth';
@@ -171,6 +171,31 @@ export function Header() {
                           >
                             <UserCircle className="w-4 h-4" /> Hồ sơ của tôi
                           </button>
+                          
+                          {user.role === 'admin' && (
+                            <button
+                              onClick={() => {
+                                navigate('/admin/dashboard');
+                                setUserDropdownOpen(false);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
+                            >
+                              <Shield className="w-4 h-4" /> Quản trị viên
+                            </button>
+                          )}
+
+                          {['author', 'admin'].includes(user.role || '') && (
+                            <button
+                              onClick={() => {
+                                navigate('/author/dashboard');
+                                setUserDropdownOpen(false);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
+                            >
+                              <PenTool className="w-4 h-4" /> Khu vực sáng tác
+                            </button>
+                          )}
+
                           <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-on-surface-variant hover:text-white hover:bg-white/5 transition-all text-left">
                             <Settings className="w-4 h-4" /> Thiết lập
                           </button>
@@ -314,6 +339,24 @@ export function Header() {
 
               {isAuthenticated ? (
                 <div className="flex flex-col gap-2">
+                  {user?.role === 'admin' && (
+                    <Link
+                      to="/admin/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-surface-container-high/50 hover:bg-surface-container-high text-white text-sm font-semibold transition-colors"
+                    >
+                      <Shield className="w-3.5 h-3.5" /> Quản trị viên
+                    </Link>
+                  )}
+                  {['author', 'admin'].includes(user?.role || '') && (
+                    <Link
+                      to="/author/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-surface-container-high/50 hover:bg-surface-container-high text-white text-sm font-semibold transition-colors"
+                    >
+                      <PenTool className="w-3.5 h-3.5" /> Khu vực sáng tác
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     disabled={isLoading}
