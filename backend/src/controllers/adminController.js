@@ -17,7 +17,9 @@ const requireSupabaseAdmin = () => {
 export const getUsers = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, role, status, search, from, to } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+    const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+    const offset = (parsedPage - 1) * parsedLimit;
     
     let query = supabase
       .from('profiles')
@@ -31,8 +33,9 @@ export const getUsers = async (req, res, next) => {
       else if (status === 'active') query = query.eq('is_banned', false);
     }
     if (search) {
-      // Tìm theo username hoặc display_name
-      query = query.or(`username.ilike.%${search}%,display_name.ilike.%${search}%`);
+      // Loại bỏ các ký tự đặc biệt có thể làm hỏng cú pháp PostgREST
+      const sanitizedSearch = search.replace(/[,()]/g, '');
+      query = query.or(`username.ilike.%${sanitizedSearch}%,display_name.ilike.%${sanitizedSearch}%`);
     }
     if (from) {
       query = query.gte('created_at', from);
@@ -43,7 +46,7 @@ export const getUsers = async (req, res, next) => {
 
     const { data, count, error } = await query
       .order('created_at', { ascending: false })
-      .range(offset, offset + parseInt(limit) - 1);
+      .range(offset, offset + parsedLimit - 1);
 
     if (error) throw error;
 
@@ -51,10 +54,10 @@ export const getUsers = async (req, res, next) => {
       success: true,
       data,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: parsedPage,
+        limit: parsedLimit,
         total: count,
-        totalPages: Math.ceil(count / parseInt(limit))
+        totalPages: Math.ceil(count / parsedLimit)
       }
     });
   } catch (error) {
@@ -163,14 +166,16 @@ export const getUserActivity = async (req, res, next) => {
 export const getPendingStories = async (req, res, next) => {
   try {
     const { page = 1, limit = 20 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+    const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+    const offset = (parsedPage - 1) * parsedLimit;
 
     const { data, count, error } = await supabase
       .from('stories')
       .select('*, author:profiles!author_id(username, display_name)', { count: 'exact' })
       .eq('is_published', false)
       .order('created_at', { ascending: false })
-      .range(offset, offset + parseInt(limit) - 1);
+      .range(offset, offset + parsedLimit - 1);
 
     if (error) throw error;
 
@@ -178,7 +183,10 @@ export const getPendingStories = async (req, res, next) => {
       success: true,
       data,
       pagination: {
-        page: parseInt(page), limit: parseInt(limit), total: count, totalPages: Math.ceil(count / parseInt(limit))
+        page: parsedPage,
+        limit: parsedLimit,
+        total: count,
+        totalPages: Math.ceil(count / parsedLimit)
       }
     });
   } catch (error) {
@@ -295,17 +303,23 @@ export const deleteGenre = async (req, res, next) => {
 
 export const getStatsOverview = async (req, res, next) => {
   try {
-    // Tạm thời query đơn giản
-    const { count: totalUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-    const { count: activeUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', false);
-    const { count: bannedUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', true);
-
-    const { count: totalStories } = await supabase.from('stories').select('*', { count: 'exact', head: true });
-    const { count: publishedStories } = await supabase.from('stories').select('*', { count: 'exact', head: true }).eq('is_published', true);
-    
-    const { count: totalChapters } = await supabase.from('chapters').select('*', { count: 'exact', head: true });
-    
-    const { count: pendingReports } = await supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    const [
+      { count: totalUsers },
+      { count: activeUsers },
+      { count: bannedUsers },
+      { count: totalStories },
+      { count: publishedStories },
+      { count: totalChapters },
+      { count: pendingReports }
+    ] = await Promise.all([
+      supabase.from('profiles').select('*', { count: 'exact', head: true }),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', false),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', true),
+      supabase.from('stories').select('*', { count: 'exact', head: true }),
+      supabase.from('stories').select('*', { count: 'exact', head: true }).eq('is_published', true),
+      supabase.from('chapters').select('*', { count: 'exact', head: true }),
+      supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+    ]);
 
     res.status(200).json({
       success: true,
@@ -370,7 +384,9 @@ export const getChapterActivity = async (req, res, next) => {
 export const getReports = async (req, res, next) => {
   try {
     const { status = 'pending', page = 1, limit = 20 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+    const parsedLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+    const offset = (parsedPage - 1) * parsedLimit;
 
     let query = supabase
       .from('reports')
@@ -382,7 +398,7 @@ export const getReports = async (req, res, next) => {
 
     const { data, count, error } = await query
       .order('created_at', { ascending: false })
-      .range(offset, offset + parseInt(limit) - 1);
+      .range(offset, offset + parsedLimit - 1);
 
     if (error) throw error;
 
@@ -390,7 +406,10 @@ export const getReports = async (req, res, next) => {
       success: true,
       data,
       pagination: {
-        page: parseInt(page), limit: parseInt(limit), total: count, totalPages: Math.ceil(count / parseInt(limit))
+        page: parsedPage,
+        limit: parsedLimit,
+        total: count,
+        totalPages: Math.ceil(count / parsedLimit)
       }
     });
   } catch (error) {
@@ -405,7 +424,7 @@ export const resolveReport = async (req, res, next) => {
 
     const { data, error } = await supabase
       .from('reports')
-      .update({ status, updated_at: new Date().toISOString() })
+      .update({ status, resolution_note, updated_at: new Date().toISOString() })
       .eq('id', reportId)
       .select()
       .single();

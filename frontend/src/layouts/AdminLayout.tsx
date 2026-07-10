@@ -8,8 +8,10 @@ const AdminLayout = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is admin
-    if (user && user.role !== 'admin') {
+    // Check if user is admin or not logged in
+    if (user === null) {
+      navigate('/login');
+    } else if (user && user.role !== 'admin') {
       navigate('/');
     }
   }, [user, navigate]);
