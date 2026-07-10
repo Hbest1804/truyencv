@@ -348,6 +348,10 @@ export const uploadStoryCover = async (req, res, next) => {
   try {
     const { storyId } = req.params;
     if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedMimeTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({ success: false, message: 'Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed.' });
+    }
 
     const adminClient = requireSupabaseAdmin();
     const { data: story, error: checkError } = await adminClient.from('stories').select('id').eq('id', storyId).maybeSingle();

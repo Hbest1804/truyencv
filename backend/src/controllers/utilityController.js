@@ -146,6 +146,9 @@ export const searchGlobal = async (req, res, next) => {
     if (!q || q.length < 2) {
       return res.status(400).json({ success: false, message: 'Search query must be at least 2 characters long' });
     }
+    if (typeof q !== 'string' || q.trim().length < 2) {
+      return res.status(400).json({ success: false, message: 'Search query must be a string of at least 2 characters' });
+    }
 
     const parsedPage = Math.max(1, parseInt(page, 10) || 1);
     const parsedLimit = Math.max(1, Math.min(50, parseInt(limit, 10) || 10));
@@ -171,7 +174,7 @@ export const searchGlobal = async (req, res, next) => {
         .from('profiles')
         .select('id, username, display_name, avatar_url, role')
         .in('role', ['author', 'admin'])
-        .or(`username.ilike.%${sanitizedSearch}%,display_name.ilike.%${sanitizedSearch}%`)
+        .or(`username.ilike.*${sanitizedSearch}*,display_name.ilike.*${sanitizedSearch}*`)
         .limit(parsedLimit);
       authors = authorData || [];
     }
@@ -199,6 +202,9 @@ export const searchSuggestions = async (req, res, next) => {
     if (!q || q.length < 2) {
       return res.status(200).json({ success: true, data: { stories: [], authors: [] } });
     }
+    if (typeof q !== 'string' || q.trim().length < 2) {
+      return res.status(200).json({ success: true, data: { stories: [], authors: [] } });
+    }
 
     const sanitizedSearch = q.replace(/[,()]/g, '');
 
@@ -214,7 +220,7 @@ export const searchSuggestions = async (req, res, next) => {
         .from('profiles')
         .select('id, username, display_name, avatar_url')
         .in('role', ['author', 'admin'])
-        .or(`username.ilike.%${sanitizedSearch}%,display_name.ilike.%${sanitizedSearch}%`)
+        .or(`username.ilike.*${sanitizedSearch}*,display_name.ilike.*${sanitizedSearch}*`)
         .limit(5)
     ]);
 

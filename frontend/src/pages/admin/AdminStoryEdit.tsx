@@ -3,18 +3,6 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { adminService } from '@/services/admin.service';
 import { ArrowLeft, Save, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 
-const GENRES = [
-  { id: 1, label: 'Tiên Hiệp' },
-  { id: 2, label: 'Kiếm Hiệp' },
-  { id: 3, label: 'Huyền Huyễn' },
-  { id: 4, label: 'Ngôn Tình' },
-  { id: 5, label: 'Đô Thị' },
-  { id: 6, label: 'Võng Du' },
-  { id: 7, label: 'Fantasy' },
-  { id: 8, label: 'Sci-Fi' },
-  { id: 9, label: 'Mystery' },
-];
-
 export default function AdminStoryEdit() {
   const navigate = useNavigate();
   const { storyId } = useParams();
@@ -31,13 +19,24 @@ export default function AdminStoryEdit() {
     original_author: '',
   });
   const [coverUrl, setCoverUrl] = useState('');
+  const [genres, setGenres] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    fetchGenres();
     if (storyId) {
       fetchStory();
     }
   }, [storyId]);
+
+  const fetchGenres = async () => {
+    try {
+      const res = await adminService.getGenres();
+      setGenres(res.data || []);
+    } catch (err) {
+      console.error('Failed to load genres', err);
+    }
+  };
 
   const fetchStory = async () => {
     try {
@@ -218,7 +217,7 @@ export default function AdminStoryEdit() {
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-2">Thể loại <span className="text-red-500">*</span></label>
                 <div className="flex flex-wrap gap-2">
-                  {GENRES.map(genre => {
+                  {genres.map(genre => {
                     const isSelected = formData.genreIds.includes(genre.id);
                     return (
                       <button
@@ -238,7 +237,7 @@ export default function AdminStoryEdit() {
                             : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
                         }`}
                       >
-                        {genre.label}
+                        {genre.name}
                       </button>
                     );
                   })}
