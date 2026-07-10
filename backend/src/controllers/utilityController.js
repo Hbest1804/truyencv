@@ -174,7 +174,7 @@ export const searchGlobal = async (req, res, next) => {
         .from('profiles')
         .select('id, username, display_name, avatar_url, role')
         .in('role', ['author', 'admin'])
-        .or(`username.ilike.*${sanitizedSearch}*,display_name.ilike.*${sanitizedSearch}*`)
+        .or(`username.ilike.%${sanitizedSearch}%,display_name.ilike.%${sanitizedSearch}%`)
         .limit(parsedLimit);
       authors = authorData || [];
     }
@@ -220,7 +220,7 @@ export const searchSuggestions = async (req, res, next) => {
         .from('profiles')
         .select('id, username, display_name, avatar_url')
         .in('role', ['author', 'admin'])
-        .or(`username.ilike.*${sanitizedSearch}*,display_name.ilike.*${sanitizedSearch}*`)
+        .or(`username.ilike.%${sanitizedSearch}%,display_name.ilike.%${sanitizedSearch}%`)
         .limit(5)
     ]);
 

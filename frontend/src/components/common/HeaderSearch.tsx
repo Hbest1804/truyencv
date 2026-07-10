@@ -120,7 +120,7 @@ export function HeaderSearch({ searchFocused, setSearchFocused }: { searchFocuse
                     <div 
                       key={`story-${story.id}`}
                       onClick={() => {
-                        navigate(`/story/${story.slug}`);
+                        navigate(`/stories/${story.id}`);
                         setSearchFocused(false);
                       }}
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"

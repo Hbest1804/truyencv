@@ -130,7 +130,7 @@ export function GenresPage() {
           ) : stories.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {stories.map((story: any) => (
-                <Link key={story.id} to={`/story/${story.slug}`} className="group flex flex-col gap-3">
+                <Link key={story.id} to={`/stories/${story.id}`} className="group flex flex-col gap-3">
                   <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface-container border border-white/5 shadow-lg group-hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all duration-300">
                     {story.cover_url ? (
                       <img src={story.cover_url} alt={story.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
