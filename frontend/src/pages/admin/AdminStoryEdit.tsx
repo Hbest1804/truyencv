@@ -13,6 +13,7 @@ export default function AdminStoryEdit() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    synopsis: '',
     status: 'draft',
     genreIds: [] as (string | number)[],
     view_count: 0,
@@ -46,6 +47,7 @@ export default function AdminStoryEdit() {
       setFormData({
         title: story.title || '',
         description: story.description || '',
+        synopsis: story.synopsis || '',
         status: story.status || 'draft',
         genreIds: story.genres?.map((g: any) => g.id) || [],
         view_count: story.view_count || 0,
@@ -248,8 +250,8 @@ export default function AdminStoryEdit() {
                 <label className="block text-sm font-medium text-white/70 mb-2">Mô tả / Tóm tắt <span className="text-red-500">*</span></label>
                 <textarea
                   required
-                  value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
+                  value={formData.synopsis}
+                  onChange={e => setFormData({...formData, synopsis: e.target.value, description: e.target.value.substring(0, 200)})}
                   className="w-full bg-surface-container-high border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all min-h-[200px]"
                   placeholder="Giới thiệu về nội dung truyện..."
                   maxLength={5000}
