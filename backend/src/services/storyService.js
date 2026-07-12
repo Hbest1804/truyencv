@@ -22,6 +22,7 @@ const STORY_SELECT = `
   created_at,
   updated_at,
   published_at,
+  original_author,
   author:profiles!author_id (
     username,
     display_name,

@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS public.stories (
     cover_url       TEXT,
     description     TEXT,                           -- Mô tả ngắn (hiển thị card)
     synopsis        TEXT,                           -- Tóm tắt nội dung đầy đủ
+    original_author VARCHAR(255),                   -- Tên tác giả gốc (nếu crawl từ nguồn khác)
     status          VARCHAR(20)  NOT NULL DEFAULT 'ongoing'
                         CHECK (status IN ('ongoing', 'completed', 'hiatus', 'dropped')),
     is_published    BOOLEAN      NOT NULL DEFAULT FALSE,
