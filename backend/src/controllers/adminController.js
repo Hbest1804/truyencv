@@ -304,11 +304,12 @@ export const getStoryDetail = async (req, res, next) => {
 export const updateStory = async (req, res, next) => {
   try {
     const { storyId } = req.params;
-    const { title, description, genreIds, status, author_id, view_count, original_author } = req.body;
+    const { title, description, synopsis, genreIds, status, author_id, view_count, original_author } = req.body;
     
     const updates = { updated_at: new Date().toISOString() };
     if (title !== undefined) updates.title = title;
     if (description !== undefined) updates.description = description;
+    if (synopsis !== undefined) updates.synopsis = synopsis;
     if (status !== undefined) {
       updates.status = status;
       updates.is_published = status === 'ongoing' || status === 'completed';
