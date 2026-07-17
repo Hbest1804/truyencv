@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { supabase, supabaseAdmin } from '../config/database.js';
 
+/** Tên bucket Supabase Storage lưu ảnh đại diện người dùng */
+const AVATAR_BUCKET = 'userimagin';
+
 const checkAdminClient = () => {
   if (!supabaseAdmin) {
     const err = new Error('Supabase admin client chưa được cấu hình. Vui lòng thiết lập SUPABASE_SERVICE_ROLE_KEY.');
@@ -141,10 +144,12 @@ export const uploadUserAvatar = async (userId, base64Data) => {
 
   // Xóa ảnh đại diện cũ (nếu có) để tránh tích lũy file rác trong Storage
   try {
-    const { data: existingFiles } = await supabaseAdmin.storage.from('avatars').list(userId);
+    const { data: existingFiles, error: listError } = await supabaseAdmin.storage.from(AVATAR_BUCKET).list(userId);
+    if (listError) throw listError;
     if (existingFiles && existingFiles.length > 0) {
       const filesToDelete = existingFiles.map((file) => `${userId}/${file.name}`);
-      await supabaseAdmin.storage.from('avatars').remove(filesToDelete);
+      const { error: removeError } = await supabaseAdmin.storage.from(AVATAR_BUCKET).remove(filesToDelete);
+      if (removeError) throw removeError;
     }
   } catch (storageErr) {
     console.warn('[Storage Cleanup Warning] Không thể dọn dẹp avatar cũ:', storageErr.message);
@@ -154,7 +159,7 @@ export const uploadUserAvatar = async (userId, base64Data) => {
   const filename = `${userId}/avatar_${Date.now()}.${extension}`;
 
   const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-    .from('avatars')
+    .from(AVATAR_BUCKET)
     .upload(filename, buffer, {
       contentType: mimeType,
       upsert: true,
@@ -168,7 +173,7 @@ export const uploadUserAvatar = async (userId, base64Data) => {
 
   // Lấy URL công khai của file vừa upload
   const { data: publicUrlData } = supabaseAdmin.storage
-    .from('avatars')
+    .from(AVATAR_BUCKET)
     .getPublicUrl(filename);
 
   const avatarUrl = publicUrlData.publicUrl;
