@@ -141,10 +141,10 @@ export const uploadUserAvatar = async (userId, base64Data) => {
 
   // Xóa ảnh đại diện cũ (nếu có) để tránh tích lũy file rác trong Storage
   try {
-    const { data: existingFiles } = await supabaseAdmin.storage.from('avatars').list(userId);
+    const { data: existingFiles } = await supabaseAdmin.storage.from('user imagin').list(userId);
     if (existingFiles && existingFiles.length > 0) {
       const filesToDelete = existingFiles.map((file) => `${userId}/${file.name}`);
-      await supabaseAdmin.storage.from('avatars').remove(filesToDelete);
+      await supabaseAdmin.storage.from('user imagin').remove(filesToDelete);
     }
   } catch (storageErr) {
     console.warn('[Storage Cleanup Warning] Không thể dọn dẹp avatar cũ:', storageErr.message);
@@ -154,7 +154,7 @@ export const uploadUserAvatar = async (userId, base64Data) => {
   const filename = `${userId}/avatar_${Date.now()}.${extension}`;
 
   const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-    .from('avatars')
+    .from('user imagin')
     .upload(filename, buffer, {
       contentType: mimeType,
       upsert: true,
@@ -168,7 +168,7 @@ export const uploadUserAvatar = async (userId, base64Data) => {
 
   // Lấy URL công khai của file vừa upload
   const { data: publicUrlData } = supabaseAdmin.storage
-    .from('avatars')
+    .from('user imagin')
     .getPublicUrl(filename);
 
   const avatarUrl = publicUrlData.publicUrl;
